@@ -1,0 +1,2041 @@
+@font-face {
+  font-family: "Cinzel";
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url("../assets/8vIJ7ww63mVu7gt79mT7.woff2") format("woff2");
+}
+
+/* 手势加载提示动画 */
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: translateX(-50%) scale(1); }
+  50% { opacity: 0.7; transform: translateX(-50%) scale(1.05); }
+}
+
+body {
+  margin: 0;
+  overflow: hidden;
+  background-color: #000000;
+  font-family: "Times New Roman", serif;
+  touch-action: none;
+}
+
+#canvas-container {
+  width: 100vw;
+  height: 100vh;
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 1;
+}
+
+#ui-layer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 10;
+  pointer-events: none;
+}
+
+/* UI 内容容器 (标题等) */
+#ui-content {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  transition: opacity 0.8s ease;
+  /* 缓慢淡入淡出 */
+}
+
+/* 隐藏状态：透明度为0 */
+.ui-invisible {
+  opacity: 0 !important;
+  pointer-events: none;
+}
+
+h1 {
+  pointer-events: auto;
+  color: #fceea7;
+  font-size: 56px;
+  margin-top: 40px;
+  text-align: center;
+  text-shadow: 0 0 50px rgba(252, 238, 167, 0.6);
+  background: linear-gradient(to bottom, #fff, #eebb66);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  font-family: "Cinzel", "Microsoft YaHei", serif;
+  width: 100%;
+  transition: opacity 0.5s;
+}
+
+/* --- 左下角菜单系统 --- */
+.menu-container {
+  position: absolute;
+  bottom: 30px;
+  left: 30px;
+  pointer-events: auto;
+  display: flex;
+  flex-direction: column-reverse;
+  align-items: flex-start;
+  gap: 15px;
+}
+
+/* 主菜单按钮 */
+.main-menu-btn {
+  background: rgba(212, 175, 55, 0.2);
+  border: 1px solid rgba(212, 175, 55, 0.6);
+  color: #d4af37;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  cursor: pointer;
+  backdrop-filter: blur(8px);
+  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 20;
+  box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
+}
+
+.main-menu-btn.active {
+  background: rgba(212, 175, 55, 0.8);
+  color: #000;
+  transform: rotate(45deg);
+}
+
+/* === 沉浸式极小模式 === */
+/* 当界面隐藏时，按钮变成一个小光点，但点击范围不变 */
+.main-menu-btn.tiny-mode {
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+  color: transparent;
+  /* 隐藏齿轮图标 */
+  transform: scale(1);
+  /* 保持点击范围大小 */
+}
+
+/* 用伪元素画一个小点 */
+.main-menu-btn.tiny-mode::after {
+  content: "";
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.6);
+  border-radius: 50%;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  box-shadow: 0 0 8px rgba(255, 255, 255, 0.9);
+  animation: breathe 3s infinite ease-in-out;
+}
+
+@keyframes breathe {
+  0%,
+  100% {
+    opacity: 0.3;
+    transform: translate(-50%, -50%) scale(1);
+  }
+
+  50% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.5);
+  }
+}
+
+/* 二级菜单列表 */
+.menu-items {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  opacity: 0;
+  transform: translateY(20px) scale(0.9);
+  pointer-events: none;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  margin-bottom: 5px;
+  transform-origin: bottom left;
+}
+
+.menu-items.show {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  pointer-events: auto;
+}
+
+/* 通用按钮样式 */
+.btn-style {
+  background: rgba(10, 10, 10, 0.75);
+  border: 1px solid rgba(212, 175, 55, 0.3);
+  color: #d4af37;
+  padding: 10px 18px;
+  cursor: pointer;
+  font-size: 13px;
+  transition: all 0.2s;
+  backdrop-filter: blur(10px);
+  font-family: "Microsoft YaHei", sans-serif;
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  text-decoration: none;
+  width: max-content;
+  white-space: nowrap;
+}
+
+.btn-style:hover {
+  background: rgba(212, 175, 55, 0.2);
+  color: #fff;
+  transform: translateX(5px);
+}
+
+.btn-style.active {
+  background: rgba(212, 175, 55, 0.5);
+  color: #fff;
+  border-color: #fff;
+}
+
+.btn-danger {
+  border-color: rgba(255, 80, 80, 0.5);
+  color: #ff8888;
+}
+
+.btn-danger:hover {
+  background: rgba(255, 50, 50, 0.3);
+  color: #fff;
+}
+
+input[type="file"] {
+  display: none;
+}
+
+#loader {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    135deg,
+    #1a0a0a 0%,
+    #0d2818 30%,
+    #2d0a0a 70%,
+    #0a1a0f 100%
+  );
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.8s ease;
+}
+
+#loader.loading .enter-content {
+  display: none;
+}
+
+#loader.loading .loading-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+#loader .loading-content {
+  display: none;
+}
+
+.enter-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 30px;
+}
+
+.enter-title {
+  font-size: 48px;
+  color: #fceea7;
+  text-shadow: 0 0 30px rgba(252, 238, 167, 0.5);
+  background: linear-gradient(to bottom, #fff, #eebb66);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  font-family: "Cinzel", "Times New Roman", serif;
+  margin-bottom: 20px;
+}
+
+.enter-btn {
+  background: linear-gradient(
+    135deg,
+    rgba(212, 175, 55, 0.3),
+    rgba(212, 175, 55, 0.1)
+  );
+  border: 2px solid rgba(212, 175, 55, 0.6);
+  color: #d4af37;
+  padding: 18px 60px;
+  font-size: 20px;
+  border-radius: 50px;
+  cursor: pointer;
+  font-family: "Microsoft YaHei", sans-serif;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 0 30px rgba(212, 175, 55, 0.2);
+}
+
+.enter-btn:hover {
+  background: linear-gradient(
+    135deg,
+    rgba(212, 175, 55, 0.5),
+    rgba(212, 175, 55, 0.3)
+  );
+  box-shadow: 0 0 50px rgba(212, 175, 55, 0.4);
+  transform: scale(1.05);
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 1px solid rgba(212, 175, 55, 0.2);
+  border-top: 1px solid #d4af37;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+.loader-text {
+  color: #d4af37;
+  margin-top: 20px;
+  font-family: "Microsoft YaHei", sans-serif;
+  font-size: 14px;
+}
+
+#webcam-wrapper {
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
+  width: 120px;
+  height: 90px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  overflow: hidden;
+  opacity: 1;
+  pointer-events: none;
+  z-index: 5;
+  border-radius: 8px;
+  transition: opacity 0.5s;
+  background: #000;
+}
+
+#toast {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(0, 0, 0, 0.8);
+  color: #fff;
+  padding: 15px 30px;
+  border-radius: 8px;
+  z-index: 200;
+  display: none;
+  text-align: center;
+  border: 1px solid #d4af37;
+  font-family: "Microsoft YaHei", sans-serif;
+  pointer-events: none;
+  line-height: 1.6;
+}
+
+#gesture-status {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  background: rgba(0, 0, 0, 0.6);
+  color: #0f0;
+  font-size: 10px;
+  text-align: center;
+  padding: 2px 0;
+  font-family: sans-serif;
+}
+
+/* 图片管理面板 */
+.photo-manager {
+  position: absolute;
+  bottom: 100px;
+  left: 30px;
+  max-width: 320px;
+  max-height: 300px;
+  background: rgba(10, 10, 10, 0.9);
+  border: 1px solid rgba(212, 175, 55, 0.3);
+  border-radius: 12px;
+  backdrop-filter: blur(10px);
+  padding: 12px;
+  pointer-events: auto;
+  opacity: 0;
+  transform: translateY(20px) scale(0.9);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 15;
+  display: none;
+}
+
+.photo-manager.show {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  display: block;
+}
+
+.photo-manager-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(212, 175, 55, 0.2);
+}
+
+.photo-manager-title {
+  color: #d4af37;
+  font-size: 14px;
+  font-family: "Microsoft YaHei", sans-serif;
+}
+
+.photo-manager-close {
+  background: none;
+  border: none;
+  color: #888;
+  font-size: 18px;
+  cursor: pointer;
+  padding: 0 5px;
+  transition: color 0.2s;
+}
+
+.photo-manager-close:hover {
+  color: #fff;
+}
+
+.photo-manager-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.photo-clear-btn {
+  background: none;
+  border: none;
+  color: #ff6666;
+  font-size: 16px;
+  cursor: pointer;
+  padding: 2px 6px;
+  transition: all 0.2s;
+  border-radius: 4px;
+}
+
+.photo-clear-btn:hover {
+  background: rgba(255, 50, 50, 0.2);
+  color: #fff;
+}
+
+.photo-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  max-height: 200px;
+  overflow-y: auto;
+  padding-right: 5px;
+}
+
+.photo-grid::-webkit-scrollbar {
+  width: 4px;
+}
+
+.photo-grid::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 2px;
+}
+
+.photo-grid::-webkit-scrollbar-thumb {
+  background: rgba(212, 175, 55, 0.5);
+  border-radius: 2px;
+}
+
+.photo-item {
+  position: relative;
+  aspect-ratio: 1;
+  border-radius: 6px;
+  overflow: hidden;
+  border: 1px solid rgba(212, 175, 55, 0.6);
+  transition: all 0.2s;
+}
+
+.photo-item:hover {
+  border-color: rgba(212, 175, 55, 0.6);
+  transform: scale(1.05);
+}
+
+.photo-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  background: rgba(212, 175, 55, 0.6);
+  border: 1px solid rgba(212, 175, 55, 0.6);
+}
+
+.photo-item-delete {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 20px;
+  height: 20px;
+  background: rgba(255, 50, 50, 0.8);
+  border: none;
+  border-radius: 50%;
+  color: #fff;
+  font-size: 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.photo-item:hover .photo-item-delete {
+  opacity: 1;
+}
+
+.photo-add-btn {
+  aspect-ratio: 1;
+  border: 2px dashed rgba(212, 175, 55, 0.4);
+  border-radius: 6px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: rgba(212, 175, 55, 0.05);
+}
+
+.photo-add-btn:hover {
+  border-color: rgba(212, 175, 55, 0.8);
+  background: rgba(212, 175, 55, 0.1);
+}
+
+.photo-add-btn span {
+  color: #d4af37;
+  font-size: 24px;
+}
+
+.photo-add-btn small {
+  color: #888;
+  font-size: 10px;
+  margin-top: 2px;
+}
+
+.photo-empty {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 20px;
+  color: #888;
+  font-size: 12px;
+}
+
+.photo-count {
+  color: #888;
+  font-size: 12px;
+}
+
+/* 通用面板拖动和缩放样式 */
+.panel-draggable {
+  cursor: default;
+}
+
+.panel-draggable .panel-header {
+  cursor: move;
+  user-select: none;
+}
+
+.panel-draggable.dragging {
+  transition: none !important;
+  opacity: 0.95;
+}
+
+.panel-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.panel-action-btn {
+  background: none;
+  border: none;
+  color: #888;
+  font-size: 14px;
+  cursor: pointer;
+  padding: 2px 6px;
+  transition: all 0.2s;
+  border-radius: 4px;
+}
+
+.panel-action-btn:hover {
+  color: #d4af37;
+  background: rgba(212, 175, 55, 0.1);
+}
+
+.panel-maximized {
+  position: fixed !important;
+  top: 50% !important;
+  left: 50% !important;
+  bottom: auto !important;
+  transform: translate(-50%, -50%) !important;
+  max-width: 90vw !important;
+  max-height: 80vh !important;
+  width: 500px !important;
+  z-index: 100 !important;
+}
+
+.panel-maximized .photo-grid,
+.panel-maximized .music-content {
+  max-height: 60vh !important;
+}
+
+.panel-resize-handle {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 15px;
+  height: 15px;
+  cursor: se-resize;
+  opacity: 0.3;
+  transition: opacity 0.2s;
+}
+
+.panel-resize-handle::before {
+  content: "";
+  position: absolute;
+  bottom: 4px;
+  right: 4px;
+  width: 8px;
+  height: 8px;
+  border-right: 2px solid #d4af37;
+  border-bottom: 2px solid #d4af37;
+}
+
+.panel-resize-handle:hover {
+  opacity: 1;
+}
+
+/* 音乐管理面板 */
+.music-manager {
+  position: absolute;
+  bottom: 100px;
+  left: 30px;
+  max-width: 320px;
+  background: rgba(10, 10, 10, 0.9);
+  border: 1px solid rgba(212, 175, 55, 0.3);
+  border-radius: 12px;
+  backdrop-filter: blur(10px);
+  padding: 12px;
+  pointer-events: auto;
+  opacity: 0;
+  transform: translateY(20px) scale(0.9);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 15;
+  display: none;
+}
+
+.music-manager.show {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  display: block;
+}
+
+.music-manager-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(212, 175, 55, 0.2);
+}
+
+.music-manager-title {
+  color: #d4af37;
+  font-size: 14px;
+  font-family: "Microsoft YaHei", sans-serif;
+}
+
+.music-manager-close {
+  background: none;
+  border: none;
+  color: #888;
+  font-size: 18px;
+  cursor: pointer;
+  padding: 0 5px;
+  transition: color 0.2s;
+}
+
+.music-manager-close:hover {
+  color: #fff;
+}
+
+.music-content {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.music-current {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  background: rgba(212, 175, 55, 0.1);
+  border-radius: 8px;
+  border: 1px solid rgba(212, 175, 55, 0.2);
+}
+
+.music-icon {
+  font-size: 24px;
+}
+
+.music-info {
+  flex: 1;
+  overflow: hidden;
+}
+
+.music-name {
+  color: #d4af37;
+  font-size: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-family: "Microsoft YaHei", sans-serif;
+}
+
+.music-status {
+  color: #888;
+  font-size: 10px;
+  margin-top: 2px;
+}
+
+.music-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.music-btn {
+  flex: 1;
+  padding: 10px;
+  background: rgba(212, 175, 55, 0.1);
+  border: 1px solid rgba(212, 175, 55, 0.3);
+  border-radius: 8px;
+  color: #d4af37;
+  font-size: 12px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.2s;
+  font-family: "Microsoft YaHei", sans-serif;
+}
+
+.music-btn:hover {
+  background: rgba(212, 175, 55, 0.2);
+  color: #fff;
+}
+
+.music-btn.active {
+  background: rgba(212, 175, 55, 0.3);
+  border-color: rgba(212, 175, 55, 0.6);
+}
+
+.music-btn-icon {
+  font-size: 20px;
+}
+
+.music-btn-danger {
+  border-color: rgba(255, 100, 100, 0.3);
+  color: #ff6666;
+}
+
+.music-btn-danger:hover {
+  background: rgba(255, 50, 50, 0.2);
+  color: #fff;
+}
+
+.music-upload-label {
+  cursor: pointer;
+}
+
+.music-upload-label input {
+  display: none;
+}
+
+/* 背景设置面板 */
+.bg-manager {
+  position: absolute;
+  bottom: 100px;
+  left: 30px;
+  width: 280px;
+  background: rgba(10, 10, 10, 0.9);
+  border: 1px solid rgba(212, 175, 55, 0.3);
+  border-radius: 12px;
+  backdrop-filter: blur(10px);
+  padding: 15px;
+  pointer-events: auto;
+  opacity: 0;
+  transform: translateY(20px) scale(0.9);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 15;
+  display: none;
+}
+
+.bg-manager.show {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  display: block;
+}
+
+.bg-manager-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(212, 175, 55, 0.2);
+}
+
+.bg-manager-title {
+  color: #d4af37;
+  font-size: 14px;
+  font-family: "Microsoft YaHei", sans-serif;
+}
+
+.bg-manager-close {
+  background: none;
+  border: none;
+  color: #888;
+  font-size: 18px;
+  cursor: pointer;
+  padding: 0 5px;
+  transition: color 0.2s;
+}
+
+.bg-manager-close:hover {
+  color: #fff;
+}
+
+.bg-content {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.bg-preview-container {
+  width: 100%;
+}
+
+.bg-preview {
+  width: 100%;
+  height: 100px;
+  background: #000;
+  border: 1px solid rgba(212, 175, 55, 0.3);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  position: relative;
+}
+
+.bg-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.bg-preview-text {
+  color: #666;
+  font-size: 12px;
+  font-family: "Microsoft YaHei", sans-serif;
+}
+
+.bg-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.bg-btn {
+  flex: 1;
+  padding: 10px;
+  background: rgba(212, 175, 55, 0.1);
+  border: 1px solid rgba(212, 175, 55, 0.3);
+  border-radius: 8px;
+  color: #d4af37;
+  font-size: 12px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.2s;
+  font-family: "Microsoft YaHei", sans-serif;
+}
+
+.bg-btn:hover {
+  background: rgba(212, 175, 55, 0.2);
+  color: #fff;
+}
+
+.bg-btn-icon {
+  font-size: 20px;
+}
+
+.bg-btn-danger {
+  border-color: rgba(255, 100, 100, 0.3);
+  color: #ff6666;
+}
+
+.bg-btn-danger:hover {
+  background: rgba(255, 50, 50, 0.2);
+  color: #fff;
+}
+
+.bg-upload-label {
+  cursor: pointer;
+}
+
+.bg-upload-label input {
+  display: none;
+}
+
+/* 标题设置面板 */
+.title-settings {
+  position: absolute;
+  bottom: 100px;
+  left: 30px;
+  width: 280px;
+  background: rgba(10, 10, 10, 0.9);
+  border: 1px solid rgba(212, 175, 55, 0.3);
+  border-radius: 12px;
+  backdrop-filter: blur(10px);
+  padding: 15px;
+  pointer-events: auto;
+  opacity: 0;
+  transform: translateY(20px) scale(0.9);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 15;
+  display: none;
+}
+
+.title-settings.show {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  display: block;
+}
+
+.title-settings-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(212, 175, 55, 0.2);
+}
+
+.title-settings-title {
+  color: #d4af37;
+  font-size: 14px;
+  font-family: "Microsoft YaHei", sans-serif;
+}
+
+.title-settings-close {
+  background: none;
+  border: none;
+  color: #888;
+  font-size: 18px;
+  cursor: pointer;
+  padding: 0 5px;
+  transition: color 0.2s;
+}
+
+.title-settings-close:hover {
+  color: #fff;
+}
+
+.title-input-group {
+  margin-bottom: 12px;
+}
+
+.title-input-label {
+  display: block;
+  color: #888;
+  font-size: 11px;
+  margin-bottom: 6px;
+  font-family: "Microsoft YaHei", sans-serif;
+}
+
+.title-input {
+  width: 100%;
+  padding: 10px 12px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(212, 175, 55, 0.3);
+  border-radius: 8px;
+  color: #d4af37;
+  font-size: 14px;
+  font-family: "Microsoft YaHei", sans-serif;
+  outline: none;
+  transition: all 0.2s;
+  box-sizing: border-box;
+}
+
+.title-input:focus {
+  border-color: rgba(212, 175, 55, 0.6);
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.title-input::placeholder {
+  color: #666;
+}
+
+/* 手势操作提示框 */
+.instruction-box {
+  position: absolute;
+  top: 20%;
+  right: 30px;
+  width: 260px;
+  background: rgba(10, 10, 10, 0.9);
+  border: 1px solid rgba(212, 175, 55, 0.3);
+  border-radius: 12px;
+  backdrop-filter: blur(10px);
+  padding: 15px;
+  z-index: 100;
+  color: #d4af37;
+  font-family: "Microsoft YaHei", sans-serif;
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  opacity: 0;
+  transform: translateX(20px);
+  pointer-events: none;
+}
+
+.instruction-box.show {
+  opacity: 1;
+  transform: translateX(0);
+  pointer-events: auto;
+}
+
+.instruction-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(212, 175, 55, 0.2);
+  font-size: 16px;
+  font-weight: bold;
+  cursor: move; /* 添加拖拽光标 */
+  user-select: none; /* 防止选中文字 */
+}
+
+.instruction-close {
+  background: none;
+  border: none;
+  color: #888;
+  font-size: 18px;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.instruction-close:hover {
+  color: #fff;
+}
+
+.instruction-content {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.instruction-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px;
+  background: rgba(212, 175, 55, 0.05);
+  border-radius: 8px;
+}
+
+.instruction-icon {
+  font-size: 24px;
+}
+
+.instruction-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.instruction-text strong {
+  color: #fceea7;
+  font-size: 14px;
+}
+
+.instruction-text span {
+  color: #aaa;
+  font-size: 12px;
+}
+
+.title-buttons {
+  display: flex;
+  gap: 10px;
+}
+
+@media (max-width: 768px) {
+  .instruction-box {
+    top: 50%;
+    left: 50%;
+    right: auto;
+    transform: translate(-50%, -50%) scale(0.9);
+    width: 80%;
+    max-width: 300px;
+  }
+  
+  .instruction-box.show {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+.particle-settings {
+  position: absolute;
+  bottom: 100px;
+  left: 30px;
+  width: 280px;
+  background: rgba(10, 10, 10, 0.9);
+  border: 1px solid rgba(212, 175, 55, 0.3);
+  border-radius: 12px;
+  backdrop-filter: blur(10px);
+  padding: 15px;
+  pointer-events: auto;
+  opacity: 0;
+  transform: translateY(20px) scale(0.9);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 15;
+  display: none;
+}
+
+.particle-settings.show {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  display: block;
+}
+
+.particle-settings-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(212, 175, 55, 0.2);
+}
+
+.particle-settings-title {
+  color: #d4af37;
+  font-size: 14px;
+  font-family: "Microsoft YaHei", sans-serif;
+}
+
+.particle-settings-close {
+  background: none;
+  border: none;
+  color: #888;
+  font-size: 18px;
+  cursor: pointer;
+  padding: 0 5px;
+  transition: color 0.2s;
+}
+
+.particle-settings-close:hover {
+  color: #fff;
+}
+
+.slider-group {
+  margin-bottom: 15px;
+}
+
+.slider-label {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+  color: #ccc;
+  font-size: 12px;
+  font-family: "Microsoft YaHei", sans-serif;
+}
+
+.slider-value {
+  color: #d4af37;
+  font-weight: bold;
+}
+
+.slider-input {
+  width: 100%;
+  height: 6px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.1);
+  outline: none;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.slider-input::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #d4af37;
+  cursor: pointer;
+  box-shadow: 0 0 10px rgba(212, 175, 55, 0.5);
+  transition: transform 0.2s;
+}
+
+.slider-input::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+}
+
+.slider-input::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #d4af37;
+  cursor: pointer;
+  border: none;
+}
+
+.apply-btn {
+  width: 100%;
+  padding: 10px;
+  background: linear-gradient(
+    135deg,
+    rgba(212, 175, 55, 0.3),
+    rgba(212, 175, 55, 0.1)
+  );
+  border: 1px solid rgba(212, 175, 55, 0.5);
+  color: #d4af37;
+  border-radius: 8px;
+  cursor: pointer;
+  font-family: "Microsoft YaHei", sans-serif;
+  font-size: 13px;
+  transition: all 0.2s;
+  margin-top: 5px;
+}
+
+.apply-btn:hover {
+  background: linear-gradient(
+    135deg,
+    rgba(212, 175, 55, 0.5),
+    rgba(212, 175, 55, 0.3)
+  );
+  color: #fff;
+}
+
+.device-hint {
+  color: #888;
+  font-size: 11px;
+  text-align: center;
+  margin-bottom: 12px;
+  font-family: "Microsoft YaHei", sans-serif;
+}
+
+@media screen and (max-width: 768px) {
+  h1 {
+    font-size: 36px;
+    margin-top: 60px;
+  }
+
+  .menu-container {
+    bottom: 20px;
+    left: 20px;
+  }
+
+  #webcam-wrapper {
+    bottom: 20px !important;
+    right: 20px !important;
+    width: 100px;
+    height: 75px;
+  }
+
+  /* 手机端图片管理面板 */
+  .photo-manager {
+    left: 15px;
+    right: 15px;
+    bottom: 80px;
+    max-width: none;
+    max-height: 50vh;
+  }
+
+  .photo-grid {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 6px;
+    max-height: calc(50vh - 60px);
+  }
+
+  .photo-item-delete {
+    opacity: 1;
+    width: 18px;
+    height: 18px;
+    font-size: 10px;
+  }
+
+  /* 手机端 loader 进入页面样式 */
+  .enter-title {
+    font-size: 28px;
+    margin-bottom: 15px;
+  }
+
+  .enter-btn {
+    padding: 14px 40px;
+    font-size: 16px;
+  }
+
+  .enter-content {
+    gap: 20px;
+    padding: 0 20px;
+  }
+
+  .loader-text {
+    font-size: 12px;
+  }
+
+  /* 手机端音乐管理面板 */
+  .music-manager {
+    left: 15px;
+    right: 15px;
+    bottom: 80px;
+    max-width: none;
+  }
+
+  /* 手机端标题设置面板 */
+  .title-settings {
+    left: 15px;
+    right: 15px;
+    bottom: 80px;
+    width: auto;
+  }
+
+  .music-actions {
+    flex-wrap: wrap;
+  }
+
+  .music-btn {
+    min-width: calc(50% - 4px);
+  }
+
+  /* 手机端菜单按钮优化 */
+  .btn-style {
+    padding: 8px 14px;
+    font-size: 12px;
+  }
+
+  .main-menu-btn {
+    width: 45px;
+    height: 45px;
+    font-size: 20px;
+  }
+
+  /* 手机端粒子设置面板 */
+  .particle-settings {
+    left: 15px;
+    right: 15px;
+    bottom: 80px;
+    width: auto;
+  }
+
+  /* 手机端背景设置面板 */
+  .bg-manager {
+    left: 15px;
+    right: 15px;
+    bottom: 80px;
+    width: auto;
+  }
+
+  /* 手机端手机摄像头连接面板 */
+  .phone-camera-panel {
+    left: 10px;
+    right: 10px;
+    bottom: 70px;
+    top: auto;
+    width: auto;
+    max-width: none;
+    max-height: calc(100vh - 150px);
+    padding: 10px;
+    overflow-y: auto;
+  }
+
+  .phone-camera-panel .phone-camera-title {
+    font-size: 13px;
+  }
+
+  .phone-camera-panel #qrcode-container {
+    padding: 8px;
+  }
+
+  .phone-camera-panel #qrcode-container p {
+    font-size: 11px !important;
+    margin-top: 6px !important;
+  }
+
+  .phone-camera-panel #connection-status {
+    font-size: 11px;
+    padding: 6px;
+  }
+
+  .phone-camera-panel #reconnect-phone-btn,
+  .phone-camera-panel #disconnect-phone-btn {
+    padding: 6px 14px;
+    font-size: 11px;
+  }
+
+  .phone-camera-panel .phone-camera-actions {
+    margin-top: 8px;
+    padding-top: 8px;
+    gap: 6px;
+  }
+
+  /* 手机端二维码缩小 */
+  .phone-camera-panel #qrcode {
+    transform: scale(0.6);
+    transform-origin: center;
+    margin: -20px 0;
+  }
+
+  /* 手机端分享提示关闭按钮 */
+  .share-mode-banner #close-banner-btn {
+    padding: 1px 5px;
+    font-size: 10px;
+    min-width: 18px;
+    min-height: 18px;
+  }
+
+  /* 手机端分享历史面板 */
+  .share-history-panel {
+    width: auto !important;
+    left: 15px !important;
+    right: 15px !important;
+    max-height: 60vh;
+    transform: translate(0, -50%) !important;
+  }
+
+  /* 手机端分享提示条优化 */
+  .share-mode-banner {
+    flex-wrap: wrap;
+    padding: 8px 10px;
+    gap: 8px;
+  }
+
+  .share-mode-banner span {
+    font-size: 12px;
+    text-align: center;
+  }
+}
+
+/* 手机摄像头连接面板 */
+.phone-camera-panel {
+  position: absolute;
+  bottom: 100px;
+  left: 30px;
+  width: 320px;
+  background: rgba(10, 10, 10, 0.95);
+  border: 1px solid rgba(212, 175, 55, 0.3);
+  border-radius: 12px;
+  backdrop-filter: blur(10px);
+  padding: 15px;
+  pointer-events: auto;
+  opacity: 0;
+  transform: translateY(20px) scale(0.9);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 20;
+}
+
+.phone-camera-panel.show {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  display: block !important;
+}
+
+.phone-camera-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(212, 175, 55, 0.2);
+}
+
+.phone-camera-title {
+  color: #d4af37;
+  font-size: 14px;
+  font-family: "Microsoft YaHei", sans-serif;
+}
+
+.phone-camera-close {
+  background: none;
+  border: none;
+  color: #888;
+  font-size: 18px;
+  cursor: pointer;
+  padding: 0 5px;
+  transition: color 0.2s;
+}
+
+.phone-camera-close:hover {
+  color: #fff;
+}
+
+.phone-camera-content #qrcode img {
+  border: 5px solid #fff;
+  border-radius: 8px;
+}
+
+/* 重开连接按钮 */
+/* 可复制URL样式 */
+.copyable-url {
+  cursor: pointer;
+  transition: all 0.2s ease;
+  padding: 6px 10px;
+  border-radius: 6px;
+  background: rgba(212, 175, 55, 0.1);
+  border: 1px dashed rgba(212, 175, 55, 0.3);
+}
+
+.copyable-url:hover {
+  background: rgba(212, 175, 55, 0.2);
+  color: #d4af37 !important;
+}
+
+.copyable-url:active {
+  transform: scale(0.98);
+}
+
+.copyable-url.copied {
+  background: rgba(76, 175, 80, 0.2);
+  border-color: rgba(76, 175, 80, 0.5);
+  color: #4CAF50 !important;
+}
+
+.phone-camera-actions {
+  display: flex;
+  justify-content: center;
+  margin-top: 15px;
+  padding-top: 15px;
+  border-top: 1px solid rgba(212, 175, 55, 0.2);
+}
+
+#reconnect-phone-btn {
+  background: rgba(212, 175, 55, 0.2);
+  border: 1px solid rgba(212, 175, 55, 0.6);
+  color: #d4af37;
+  padding: 10px 25px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  font-family: "Microsoft YaHei", sans-serif;
+  transition: all 0.3s ease;
+}
+
+#reconnect-phone-btn:hover {
+  background: rgba(212, 175, 55, 0.4);
+  box-shadow: 0 0 15px rgba(212, 175, 55, 0.3);
+}
+
+
+#disconnect-phone-btn {
+   background: rgba(212, 175, 55, 0.2);
+  border: 1px solid rgba(212, 175, 55, 0.6);
+  color: #fff;
+  padding: 10px 25px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  font-family: "Microsoft YaHei", sans-serif;
+  transition: all 0.3s ease;
+}
+
+#disconnect-phone-btn:hover {
+  background: rgba(212, 175, 55, 0.4);
+  box-shadow: 0 0 15px rgba(212, 175, 55, 0.3);
+}
+
+/* 更多功能下拉菜单 */
+.more-functions-container,
+.share-menu-container {
+  position: relative;
+  width: 100%;
+}
+
+.more-functions-menu {
+  display: none;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 8px;
+  padding: 10px;
+  background: rgba(20, 20, 20, 0.9);
+  border: 1px solid rgba(212, 175, 55, 0.3);
+  border-radius: 8px;
+}
+
+.more-functions-menu.show {
+  display: flex;
+}
+
+.more-functions-menu .btn-style {
+  margin: 0;
+  font-size: 13px;
+}
+
+/* PC端图片管理面板优化 */
+@media screen and (min-width: 769px) {
+  .photo-manager {
+    max-width: 450px;
+    max-height: 400px;
+  }
+
+  .photo-grid {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    max-height: 300px;
+  }
+
+  .photo-add-btn {
+    min-height: 90px;
+  }
+
+  .photo-add-btn span {
+    font-size: 32px;
+  }
+
+  .photo-add-btn small {
+    font-size: 12px;
+  }
+}
+
+/* 分享历史面板 */
+.share-history-panel {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 320px;
+    height: 400px;
+    background: rgba(20, 20, 20, 0.9);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 12px;
+    display: none;
+    flex-direction: column;
+    z-index: 1000;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    color: #fff;
+}
+
+.share-history-panel.show {
+    display: flex;
+}
+
+.share-history-header {
+    padding: 15px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: move;
+}
+
+.share-history-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 10px;
+}
+
+.share-history-item {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    padding: 10px;
+    margin-bottom: 10px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: 1px solid transparent;
+}
+
+.share-history-item:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(212, 175, 55, 0.5);
+}
+
+.share-history-item.active {
+    border-color: #d4af37;
+    background: rgba(212, 175, 55, 0.1);
+}
+
+.share-item-title {
+    font-size: 14px;
+    font-weight: bold;
+    color: #fceea7;
+    margin-bottom: 5px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.share-item-info {
+    font-size: 12px;
+    color: #aaa;
+    display: flex;
+    justify-content: space-between;
+}
+
+/* 分享弹窗样式 */
+.share-modal {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.8);
+  z-index: 1000;
+  justify-content: center;
+  align-items: center;
+  backdrop-filter: blur(5px);
+}
+
+.share-modal.show {
+  display: flex;
+}
+
+.share-modal-content {
+  background: rgba(20, 20, 20, 0.95);
+  border: 1px solid rgba(212, 175, 55, 0.4);
+  border-radius: 16px;
+  width: 90%;
+  max-width: 400px;
+  overflow: hidden;
+  animation: modalSlideIn 0.3s ease;
+}
+
+@keyframes modalSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.share-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 20px;
+  border-bottom: 1px solid rgba(212, 175, 55, 0.2);
+  color: #d4af37;
+  font-size: 16px;
+  font-family: "Microsoft YaHei", sans-serif;
+}
+
+.share-modal-close {
+  background: none;
+  border: none;
+  color: #888;
+  font-size: 20px;
+  cursor: pointer;
+  padding: 0 5px;
+  transition: color 0.2s;
+}
+
+.share-modal-close:hover {
+  color: #fff;
+}
+
+.share-modal-body {
+  padding: 25px 20px;
+  text-align: center;
+}
+
+.share-input-section {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 10px 0;
+}
+
+.share-note-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  text-align: left;
+}
+
+.share-note-group label {
+  color: #d4af37;
+  font-size: 13px;
+  font-family: "Microsoft YaHei", sans-serif;
+}
+
+.share-note-group input {
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(212, 175, 55, 0.3);
+  border-radius: 8px;
+  color: #fff;
+  font-size: 14px;
+  font-family: "Microsoft YaHei", sans-serif;
+  outline: none;
+  transition: all 0.2s;
+}
+
+.share-note-group input:focus {
+  border-color: rgba(212, 175, 55, 0.8);
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.share-action-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: center;
+}
+
+.share-action-buttons .btn-style {
+  width: 100%;
+  justify-content: center;
+  font-size: 14px;
+  padding: 12px;
+}
+
+.share-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 15px;
+  color: #aaa;
+  font-family: "Microsoft YaHei", sans-serif;
+}
+
+.share-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid rgba(212, 175, 55, 0.2);
+  border-top: 3px solid #d4af37;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+.share-result {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.share-success-text {
+  color: #4CAF50;
+  font-size: 16px;
+  font-family: "Microsoft YaHei", sans-serif;
+  margin: 0;
+}
+
+.share-link-box {
+  display: flex;
+  gap: 8px;
+}
+
+.share-link-box input {
+  flex: 1;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(212, 175, 55, 0.3);
+  border-radius: 8px;
+  color: #fff;
+  font-size: 13px;
+  font-family: monospace;
+  outline: none;
+}
+
+.share-copy-btn {
+  padding: 12px 16px;
+  background: rgba(212, 175, 55, 0.2);
+  border: 1px solid rgba(212, 175, 55, 0.5);
+  border-radius: 8px;
+  color: #d4af37;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: "Microsoft YaHei", sans-serif;
+  white-space: nowrap;
+}
+
+.share-copy-btn:hover {
+  background: rgba(212, 175, 55, 0.4);
+  color: #fff;
+}
+
+.share-copy-btn.copied {
+  background: rgba(76, 175, 80, 0.3);
+  border-color: rgba(76, 175, 80, 0.5);
+  color: #4CAF50;
+}
+
+.share-tip {
+  color: #888;
+  font-size: 12px;
+  font-family: "Microsoft YaHei", sans-serif;
+  margin: 0;
+}
+
+.share-error {
+  color: #ff6666;
+  font-family: "Microsoft YaHei", sans-serif;
+}
+
+.share-error p {
+  margin: 5px 0;
+}
+
+.share-retry-btn {
+  margin-top: 10px;
+  padding: 10px 20px;
+  background: rgba(212, 175, 55, 0.2);
+  border: 1px solid rgba(212, 175, 55, 0.5);
+  border-radius: 8px;
+  color: #d4af37;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: "Microsoft YaHei", sans-serif;
+}
+
+.share-retry-btn:hover {
+  background: rgba(212, 175, 55, 0.4);
+  color: #fff;
+}
+
+/* 分享模式提示样式 */
+.share-mode-banner {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  background: linear-gradient(90deg, rgba(212, 175, 55, 0.9), rgba(255, 200, 100, 0.9));
+  color: #000;
+  text-align: center;
+  padding: 10px 15px;
+  font-size: 14px;
+  font-family: "Microsoft YaHei", sans-serif;
+  z-index: 100;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+}
+
+.share-mode-banner button {
+  padding: 5px 15px;
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(0, 0, 0, 0.3);
+  border-radius: 15px;
+  color: #000;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.share-mode-banner button:hover {
+  background: rgba(0, 0, 0, 0.3);
+}
+
+.share-mode-banner #close-banner-btn {
+  padding: 2px 8px;
+  border-radius: 50%;
+  font-size: 14px;
+  line-height: 1;
+  min-width: 24px;
+  min-height: 24px;
+}
+
+/* Toggle Switch */
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 44px;
+  height: 22px;
+  margin-right: 10px;
+}
+
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(255, 255, 255, 0.1);
+  transition: .4s;
+  border-radius: 22px;
+  border: 1px solid rgba(212, 175, 55, 0.3);
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 16px;
+  width: 16px;
+  left: 2px;
+  bottom: 2px;
+  background-color: #888;
+  transition: .4s;
+  border-radius: 50%;
+}
+
+input:checked + .slider {
+  background-color: rgba(212, 175, 55, 0.2);
+  border-color: rgba(212, 175, 55, 0.8);
+}
+
+input:checked + .slider:before {
+  transform: translateX(22px);
+  background-color: #d4af37;
+  box-shadow: 0 0 10px rgba(212, 175, 55, 0.6);
+}
+
+/* Adjust the container */
+.share-toggle-group {
+    display: flex; 
+    flex-direction: row; 
+    align-items: center; 
+    margin-top: 15px;
+    padding: 0 5px;
+}
+
+.toggle-label {
+    cursor: pointer; 
+    user-select: none;
+    color: #bbb;
+    font-size: 13px;
+    font-family: "Microsoft YaHei", sans-serif;
+    transition: color 0.3s;
+}
+
+.switch input:checked ~ .toggle-label {
+    color: #d4af37;
+}

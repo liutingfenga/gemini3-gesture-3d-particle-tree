@@ -1,0 +1,2443 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Merry Christmas</title>
+    <link rel="stylesheet" href="./css/style.css">
+    <link rel="icon" href="/favicon.ico" type="image/x-icon">
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "./js/three/three.module.js",
+                "three/addons/": "./js/three/jsm/",
+                "@mediapipe/tasks-vision": "./js/mediapipe/tasks-vision.js"
+            }
+        }
+    </script>
+</head>
+
+<body>
+
+    <div id="loader" style="display: none;">
+        <div class="enter-content">
+            <div class="enter-title">Merry Christmas</div>
+            <button id="enter-btn" class="enter-btn">开启圣诞树</button>
+        </div>
+        <div class="loading-content">
+            <div class="spinner"></div>
+            <div class="loader-text">Loading...</div>
+        </div>
+    </div>
+
+    <div id="toast"></div>
+    <div id="canvas-container"></div>
+
+    <!-- 手势模型加载提示 -->
+    <div id="gesture-loading-tip"
+        style="display:none; position:fixed; left:50%; bottom:5%; transform:translateX(-50%); z-index:1000; background:rgba(0,0,0,0.8); color:#ffcc00; padding:15px 30px; border-radius:10px; font-size:18px; font-weight:bold; text-align:center; box-shadow:0 4px 20px rgba(255,204,0,0.3); animation:pulse 1.5s ease-in-out infinite;">
+        ⛳ 加载手势操控模型中...<span id="gesture-countdown">30</span>秒
+    </div>
+
+    <audio id="bg-music" loop style="display:none;"></audio>
+
+    <div id="ui-layer">
+        <div id="ui-content">
+            <h1>Merry Christmas</h1>
+
+            <!-- 手势操作提示框 -->
+            <div id="instruction-box" class="instruction-box panel-draggable">
+                <div class="instruction-header panel-header">
+                    <span>🖐️ 手势操作指南</span>
+                    <button id="instruction-close" class="instruction-close">✕</button>
+                </div>
+                <div class="instruction-content">
+                    <div class="instruction-item">
+                        <span class="instruction-icon">🖐️</span>
+                        <div class="instruction-text">
+                            <strong>张开手掌</strong>
+                            <span>控制旋转视角</span>
+                        </div>
+                    </div>
+                    <div class="instruction-item">
+                        <span class="instruction-icon">👊</span>
+                        <div class="instruction-text">
+                            <strong>握紧拳头</strong>
+                            <span>还原圣诞树形态</span>
+                        </div>
+                    </div>
+                    <div class="instruction-item">
+                        <span class="instruction-icon">👌</span>
+                        <div class="instruction-text">
+                            <strong>捏合手指</strong>
+                            <span>选中并放大照片</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="menu-container">
+                <button id="main-menu-btn" class="main-menu-btn">⚙️</button>
+
+                <div id="menu-items" class="menu-items">
+                    <button id="help-btn" class="btn-style">❓ 帮助</button>
+                    <button id="menu-music-toggle-btn" class="btn-style">▶️ 播放音乐</button>
+                    <button id="camera-btn" class="btn-style">🖐️ 开启手势</button>
+                    <button id="music-manage-btn" class="btn-style">🎵 音乐管理</button>
+                    <button id="photo-manage-btn" class="btn-style">📷 图片管理</button>
+
+                    <button id="preview-toggle-btn" class="btn-style">🖼️ 隐藏摄像头框</button>
+                    <button id="toggle-ui-btn" class="btn-style">👁️ 隐藏所有UI元素(只有圣诞树)</button>
+                    <button id="gesture-tip-btn" class="btn-style"
+                        style="cursor: default; opacity: 0.7;">手势无效时请用手掌贴近摄像头然后拉远再试</button>
+                    <!-- 更多功能下拉菜单 -->
+                    <div class="more-functions-container">
+                        <button id="more-functions-btn" class="btn-style">🔧 更多功能</button>
+                        <div id="more-functions-menu" class="more-functions-menu">
+                            <button id="title-settings-btn" class="btn-style">🏷️ 标题设置</button>
+                            <button id="bg-manage-btn" class="btn-style">🌌 背景设置</button>
+                            <button id="particle-settings-btn" class="btn-style">✨ 粒子设置</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 粒子设置面板 -->
+    <div id="particle-settings" class="particle-settings panel-draggable">
+        <div class="particle-settings-header panel-header">
+            <span class="particle-settings-title">✨ 粒子数量设置</span>
+            <div class="panel-actions">
+                <button class="panel-action-btn panel-maximize-btn" title="放大/缩小">⛶</button>
+                <button id="particle-settings-close" class="particle-settings-close">✕</button>
+            </div>
+        </div>
+        <div class="device-hint" id="device-hint">当前设备: PC端</div>
+        <div class="slider-group">
+            <div class="slider-label">
+                <span>🎄 装饰粒子</span>
+                <span class="slider-value" id="particle-value">1500</span>
+            </div>
+            <input type="range" class="slider-input" id="particle-slider" min="100" max="3000" value="1500">
+        </div>
+        <div class="slider-group">
+            <div class="slider-label">
+                <span>✨ 飘浮光点</span>
+                <span class="slider-value" id="dust-value">2500</span>
+            </div>
+            <input type="range" class="slider-input" id="dust-slider" min="0" max="5000" value="2500">
+        </div>
+        <div style="display: flex; gap: 10px;">
+            <button id="reset-particle-btn" class="apply-btn"
+                style="flex: 1; background: rgba(100,100,100,0.3); border-color: rgba(150,150,150,0.5); color: #aaa;">🔄
+                恢复默认</button>
+            <button id="apply-particle-btn" class="apply-btn" style="flex: 1;">✅ 应用设置</button>
+        </div>
+        <div class="panel-resize-handle"></div>
+    </div>
+
+    <!-- 图片管理面板 -->
+    <div id="photo-manager" class="photo-manager panel-draggable">
+        <div class="photo-manager-header panel-header">
+            <span class="photo-manager-title">📷 图片管理 <span id="photo-count" class="photo-count">(0张)</span></span>
+            <div class="panel-actions">
+                <button id="clear-photos-btn" class="panel-action-btn" title="清空所有照片">🗑️</button>
+                <button class="panel-action-btn panel-maximize-btn" title="放大/缩小">⛶</button>
+                <button id="photo-manager-close" class="photo-manager-close">✕</button>
+            </div>
+        </div>
+        <div id="photo-grid" class="photo-grid">
+            <!-- 图片列表将在这里动态生成 -->
+        </div>
+        <input type="file" id="file-input" multiple accept="image/*" style="display:none;">
+        <div class="panel-resize-handle"></div>
+    </div>
+
+    <!-- 音乐管理面板 -->
+    <div id="music-manager" class="music-manager panel-draggable">
+        <div class="music-manager-header panel-header">
+            <span class="music-manager-title">🎵 音乐管理</span>
+            <div class="panel-actions">
+                <button class="panel-action-btn panel-maximize-btn" title="放大/缩小">⛶</button>
+                <button id="music-manager-close" class="music-manager-close">✕</button>
+            </div>
+        </div>
+        <div class="music-content">
+            <div class="music-current">
+                <span class="music-icon">🎶</span>
+                <div class="music-info">
+                    <div class="music-name" id="current-music-name">默认音乐</div>
+                    <div class="music-status" id="music-status">未播放</div>
+                </div>
+            </div>
+            <div class="music-actions">
+                <button id="play-pause-btn" class="music-btn">
+                    <span class="music-btn-icon">▶️</span>
+                    <span>播放</span>
+                </button>
+                <label class="music-btn music-upload-label">
+                    <span class="music-btn-icon">📁</span>
+                    <span>更换音乐</span>
+                    <input type="file" id="music-input" accept="audio/*, video/mp4">
+                </label>
+                <button id="clear-music-btn" class="music-btn music-btn-danger">
+                    <span class="music-btn-icon">🔄</span>
+                    <span>重置</span>
+                </button>
+            </div>
+        </div>
+        <div class="panel-resize-handle"></div>
+    </div>
+
+    <!-- 标题设置面板 -->
+    <div id="title-settings" class="title-settings panel-draggable">
+        <div class="title-settings-header panel-header">
+            <span class="title-settings-title">🏷️ 标题设置</span>
+            <div class="panel-actions">
+                <button class="panel-action-btn panel-maximize-btn" title="放大/缩小">⛶</button>
+                <button id="title-settings-close" class="title-settings-close">✕</button>
+            </div>
+        </div>
+        <div class="title-input-group">
+            <label class="title-input-label">主标题文字</label>
+            <input type="text" id="main-title-input" class="title-input" placeholder="输入主标题..." maxlength="30">
+        </div>
+        <div class="title-input-group">
+            <label class="title-input-label">引导页标题</label>
+            <input type="text" id="enter-title-input" class="title-input" placeholder="输入引导页标题..." maxlength="30">
+        </div>
+        <div class="title-buttons">
+            <button id="reset-title-btn" class="apply-btn"
+                style="flex: 1; background: rgba(100,100,100,0.3); border-color: rgba(150,150,150,0.5); color: #aaa;">🔄
+                恢复默认</button>
+            <button id="apply-title-btn" class="apply-btn" style="flex: 1;">✅ 应用</button>
+        </div>
+        <div class="panel-resize-handle"></div>
+    </div>
+
+    <!-- 背景设置面板 -->
+    <div id="bg-manager" class="bg-manager panel-draggable">
+        <div class="bg-manager-header panel-header">
+            <span class="bg-manager-title">🌌 背景设置</span>
+            <div class="panel-actions">
+                <button class="panel-action-btn panel-maximize-btn" title="放大/缩小">⛶</button>
+                <button id="bg-manager-close" class="bg-manager-close">✕</button>
+            </div>
+        </div>
+        <div class="bg-content">
+            <div class="bg-preview-container">
+                <div class="bg-preview" id="bg-preview">
+                    <span class="bg-preview-text">默认黑色背景</span>
+                </div>
+            </div>
+            <div class="bg-actions">
+                <label class="bg-btn bg-upload-label">
+                    <span class="bg-btn-icon">📷</span>
+                    <span>上传图片</span>
+                    <input type="file" id="bg-input" accept="image/*">
+                </label>
+                <button id="reset-bg-btn" class="bg-btn bg-btn-danger">
+                    <span class="bg-btn-icon">🔄</span>
+                    <span>恢复默认</span>
+                </button>
+            </div>
+        </div>
+        <div class="panel-resize-handle"></div>
+    </div>
+
+    
+
+    <div id="webcam-wrapper">
+        <video id="webcam" autoplay playsinline muted style="display:none;"></video>
+        <canvas id="webcam-preview"></canvas>
+        <div id="gesture-status">请点击"开启手势"按钮</div>
+        <button id="request-camera-btn"
+            style="display:none; position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); background:rgba(76,175,80,0.9); color:#fff; border:none; border-radius:8px; padding:10px 15px; font-size:12px; cursor:pointer; z-index:10; white-space:nowrap; pointer-events:auto;">📷
+            请求摄像头权限</button>
+    </div>
+
+    
+
+    <!-- 注册 Service Worker 以缓存大型资源文件 -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('./js/sw.js').then(function (registration) {
+                console.log('[App] Service Worker 注册成功, scope:', registration.scope);
+            }).catch(function (err) {
+                console.warn('[App] Service Worker 注册失败:', err);
+            });
+        }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+        import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+        import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+        import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+        import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+        import { FilesetResolver, HandLandmarker } from '@mediapipe/tasks-vision';
+
+        const isMobile = window.innerWidth < 768;
+        const DEFAULT_MUSIC_URL = "./assets/shengdanbgm.mp3";
+
+        // 从 localStorage 读取粒子设置
+        const PARTICLE_SETTINGS_KEY = 'xmas_particle_settings';
+        function getParticleSettings() {
+            const saved = localStorage.getItem(PARTICLE_SETTINGS_KEY);
+            if (saved) {
+                try {
+                    return JSON.parse(saved);
+                } catch (e) { }
+            }
+            // 默认值
+            return {
+                count: isMobile ? 500 : 1500,
+                dustCount: isMobile ? 600 : 2500
+            };
+        }
+        const particleSettings = getParticleSettings();
+
+        const CONFIG = {
+            colors: { bg: 0x000000, champagneGold: 0xffd966, deepGreen: 0x03180a, accentRed: 0x990000 },
+            particles: { count: particleSettings.count, dustCount: particleSettings.dustCount, treeHeight: 24, treeRadius: 8 },
+            camera: { z: 50 }
+        };
+
+        const STATE = { mode: 'TREE', focusTarget: null, hand: { detected: false, x: 0, y: 0, lastX: 0, lastY: 0, smoothX: 0, smoothY: 0, isGrabbing: false }, rotation: { x: 0, y: 0, targetX: 0, targetY: 0 }, uiVisible: true };
+
+        // 手势控制平滑参数
+        const GESTURE_CONFIG = {
+            smoothFactor: 0.3,      // 手部位置平滑系数（越小越平滑，0.1-0.5）
+            deadZone: 0.008,        // 死区阈值，忽略微小晃动
+            rotationSmooth: 0.15,   // 旋转平滑系数
+            sensitivity: 1.8        // 旋转灵敏度
+        };
+        let scene, camera, renderer, composer, controls, mainGroup;
+        let clock = new THREE.Clock();
+        let particleSystem = [];  // 存储照片粒子
+        let photoMeshGroup = new THREE.Group();
+        let handLandmarker, video, webcamCanvas, webcamCtx;
+        let caneTexture;
+        let isPreviewVisible = true;
+        let uploadedPhotos = []; // 存储已上传照片的 base64 数据 (全局变量)
+
+        // InstancedMesh 优化相关
+        let instancedMeshes = {};  // 存储各类型的 InstancedMesh
+        let particleData = [];     // 存储所有粒子的数据（位置、旋转、缩放等）
+        let dustInstancedMesh = null;  // 灰尘粒子 InstancedMesh
+        let dustData = [];         // 灰尘粒子数据
+        const dummy = new THREE.Object3D();  // 用于计算矩阵
+
+        // 分帧更新优化（每帧更新全部，但优化计算）
+        let particleUpdateIndex = 0;
+        let dustUpdateIndex = 0;
+        // 每帧更新所有粒子，保证流畅性
+        const PARTICLES_PER_FRAME = CONFIG.particles.count;
+        const DUST_PER_FRAME = CONFIG.particles.dustCount;
+
+        // --- IndexedDB ---
+        const DB_NAME = 'XmasTreeDB_V4';
+        const STORE_PHOTOS = 'photos';
+        const STORE_MUSIC = 'music';
+        const STORE_BACKGROUND = 'background';
+        let db;
+
+        function initDB() {
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open(DB_NAME, 2);
+                request.onupgradeneeded = (event) => {
+                    db = event.target.result;
+                    if (!db.objectStoreNames.contains(STORE_PHOTOS)) db.createObjectStore(STORE_PHOTOS, { autoIncrement: true });
+                    if (!db.objectStoreNames.contains(STORE_MUSIC)) db.createObjectStore(STORE_MUSIC, { keyPath: 'id' });
+                    if (!db.objectStoreNames.contains(STORE_BACKGROUND)) db.createObjectStore(STORE_BACKGROUND, { keyPath: 'id' });
+                };
+                request.onsuccess = (event) => { db = event.target.result; resolve(db); };
+                request.onerror = (event) => { console.warn('IndexedDB 初始化失败:', event.target.error); reject(event); };
+            });
+        }
+
+        async function savePhotoToDB(base64Data) {
+            if (!db) return;
+            try {
+                const tx = db.transaction([STORE_PHOTOS], 'readwrite');
+                tx.objectStore(STORE_PHOTOS).add(base64Data);
+                tx.onerror = () => console.warn('照片保存失败');
+            } catch (e) {
+                console.warn('照片保存异常:', e);
+            }
+        }
+
+        async function saveMusicToDB(file) {
+            if (!db) return;
+            try {
+                const tx = db.transaction([STORE_MUSIC], 'readwrite');
+                tx.objectStore(STORE_MUSIC).put({ id: 'bgm', file: file });
+                tx.onerror = () => console.warn('音乐保存失败');
+            } catch (e) {
+                console.warn('音乐保存异常:', e);
+            }
+        }
+
+        async function saveBackgroundToDB(base64Data) {
+            if (!db) return;
+            try {
+                const tx = db.transaction([STORE_BACKGROUND], 'readwrite');
+                tx.objectStore(STORE_BACKGROUND).put({ id: 'bg', data: base64Data });
+                tx.onerror = () => console.warn('背景保存失败');
+            } catch (e) {
+                console.warn('背景保存异常:', e);
+            }
+        }
+
+        async function clearBackgroundData() {
+            if (!db) return;
+            const tx = db.transaction([STORE_BACKGROUND], 'readwrite');
+            tx.objectStore(STORE_BACKGROUND).clear();
+            tx.oncomplete = () => {
+                // 恢复默认黑色背景
+                scene.background = new THREE.Color(CONFIG.colors.bg);
+                updateBgPreview(null);
+                showToast("🌌 已恢复默认背景");
+            };
+        }
+
+        async function loadDataFromDB() {
+            if (!db) return;
+            // Photos
+            const photoTx = db.transaction([STORE_PHOTOS], 'readonly');
+            const photoReq = photoTx.objectStore(STORE_PHOTOS).getAll();
+            photoReq.onsuccess = () => {
+                const photos = photoReq.result;
+                if (photos && photos.length > 0) {
+                    showToast(`已恢复 ${photos.length} 张照片`);
+                    // 同步到 uploadedPhotos 数组
+                    if (typeof uploadedPhotos !== 'undefined') {
+                        uploadedPhotos.push(...photos);
+                    }
+                    photos.forEach(base64 => {
+                        new THREE.TextureLoader().load(
+                            base64,
+                            (t) => { t.colorSpace = THREE.SRGBColorSpace; addPhotoToScene(t); },
+                            undefined,
+                            (err) => { console.warn('照片纹理加载失败:', err); }
+                        );
+                    });
+                }
+            };
+            // Music
+            const musicTx = db.transaction([STORE_MUSIC], 'readonly');
+            const musicReq = musicTx.objectStore(STORE_MUSIC).get('bgm');
+            musicReq.onsuccess = () => {
+                if (musicReq.result && musicReq.result.file) {
+                    playMusic(musicReq.result.file);
+                    showToast("已加载自定义音乐");
+                } else {
+                    playDefaultMusic();
+                }
+            };
+            // Background
+            try {
+                const bgTx = db.transaction([STORE_BACKGROUND], 'readonly');
+                const bgReq = bgTx.objectStore(STORE_BACKGROUND).get('bg');
+                bgReq.onsuccess = () => {
+                    if (bgReq.result && bgReq.result.data) {
+                        applyBackgroundImage(bgReq.result.data);
+                        updateBgPreview(bgReq.result.data);
+                    }
+                };
+            } catch (e) {
+                // 背景存储不存在，忽略
+            }
+        }
+
+        // 应用背景图片
+        function applyBackgroundImage(base64Data) {
+            const textureLoader = new THREE.TextureLoader();
+            textureLoader.load(base64Data, (texture) => {
+                texture.colorSpace = THREE.SRGBColorSpace;
+                scene.background = texture;
+            });
+        }
+
+        // 更新背景预览
+        function updateBgPreview(base64Data) {
+            const bgPreview = document.getElementById('bg-preview');
+            if (!bgPreview) return;
+            bgPreview.innerHTML = '';
+            if (base64Data) {
+                const img = document.createElement('img');
+                img.src = base64Data;
+                img.alt = "当前背景";
+                bgPreview.appendChild(img);
+            } else {
+                const span = document.createElement('span');
+                span.className = 'bg-preview-text';
+                span.textContent = '默认黑色背景';
+                bgPreview.appendChild(span);
+            }
+        }
+
+        async function clearPhotoData() {
+            if (!db) return;
+            const tx = db.transaction([STORE_PHOTOS], 'readwrite');
+            tx.objectStore(STORE_PHOTOS).clear();
+        }
+
+        async function clearMusicData() {
+            if (!db) return;
+            const tx = db.transaction([STORE_MUSIC], 'readwrite');
+            tx.objectStore(STORE_MUSIC).clear();
+            tx.oncomplete = () => {
+                localStorage.removeItem(MUSIC_STATE_KEY); // 清除暂停状态，恢复默认播放
+                playDefaultMusic();
+                showToast("🎵 已恢复默认音乐");
+            };
+        }
+
+        // --- Music Logic ---
+        const bgAudio = document.getElementById('bg-music');
+        const playPauseBtn = document.getElementById('play-pause-btn');
+        let isMusicPlaying = false;
+        const MUSIC_STATE_KEY = 'musicPlayingState'; // 保存音乐播放状态的key
+        let currentMusicObjectURL = null; // 跟踪当前的 ObjectURL 以便释放
+
+        function playMusic(source) {
+            // 释放之前的 ObjectURL 防止内存泄漏
+            if (currentMusicObjectURL) {
+                URL.revokeObjectURL(currentMusicObjectURL);
+                currentMusicObjectURL = null;
+            }
+
+            if (source instanceof Blob || source instanceof File) {
+                currentMusicObjectURL = URL.createObjectURL(source);
+                bgAudio.src = currentMusicObjectURL;
+            } else {
+                bgAudio.src = source;
+            }
+            bgAudio.volume = 0.5;
+            attemptPlay();
+        }
+
+        function playDefaultMusic() {
+            bgAudio.src = DEFAULT_MUSIC_URL;
+            bgAudio.volume = 0.5;
+            attemptPlay();
+        }
+
+        function attemptPlay() {
+            // 检查用户之前是否手动暂停了音乐
+            const savedState = localStorage.getItem(MUSIC_STATE_KEY);
+            // 如果用户明确暂停了，则不自动播放
+            if (savedState === 'paused') {
+                updatePlayBtn(false);
+                return;
+            }
+            const p = bgAudio.play();
+            if (p !== undefined) {
+                p.then(() => {
+                    updatePlayBtn(true);
+                    localStorage.setItem(MUSIC_STATE_KEY, 'playing');
+                }).catch(() => {
+                    updatePlayBtn(false);
+                });
+            }
+        }
+
+        function updatePlayBtn(playing) {
+            isMusicPlaying = playing;
+            const playPauseBtnIcon = playPauseBtn.querySelector('.music-btn-icon');
+            const playPauseBtnText = playPauseBtn.querySelector('span:last-child');
+            if (playPauseBtnIcon && playPauseBtnText) {
+                playPauseBtnIcon.textContent = playing ? "⏸️" : "▶️";
+                playPauseBtnText.textContent = playing ? "暂停" : "播放";
+            }
+            playPauseBtn.classList.toggle("active", playing);
+            // 更新音乐状态显示
+            const musicStatus = document.getElementById('music-status');
+            if (musicStatus) {
+                musicStatus.textContent = playing ? "正在播放" : "已暂停";
+            }
+        }
+
+        playPauseBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (isMusicPlaying) {
+                bgAudio.pause();
+                updatePlayBtn(false);
+                localStorage.setItem(MUSIC_STATE_KEY, 'paused'); // 用户手动暂停
+            } else {
+                bgAudio.play();
+                updatePlayBtn(true);
+                localStorage.setItem(MUSIC_STATE_KEY, 'playing'); // 用户手动播放
+            }
+        });
+
+        // --- Init ---
+        async function init() {
+            try { await initDB(); } catch (e) { }
+            initThree(); setupEnvironment(); setupLights(); createTextures(); createParticles(); createDust(); createDefaultPhotos(); setupPostProcessing(); setupEvents(); setupUI();
+
+            loadDataFromDB();
+
+            const loader = document.getElementById('loader');
+            animate();
+            setTimeout(() => {
+                if (loader) loader.style.opacity = 0;
+                setTimeout(() => loader?.remove(), 800);
+            }, 500);
+
+            if (handLandmarker) {
+                document.getElementById('gesture-status').innerText = '正在启动摄像头...';
+            } else {
+                document.getElementById('gesture-status').innerText = '正在加载手势操控模型...';
+            }
+            enableHandTracking(true);
+        }
+
+        function updatePhotoCount() {
+            const photoCountSpan = document.getElementById('photo-count');
+            if (photoCountSpan) {
+                photoCountSpan.textContent = `(${uploadedPhotos.length}张)`;
+            }
+        }
+
+        // 渲染图片网格
+        function renderPhotoGrid() {
+            const photoGrid = document.getElementById('photo-grid');
+            const photoCountSpan = document.getElementById('photo-count');
+            if (!photoGrid) return;
+
+            photoGrid.innerHTML = '';
+
+            // 添加上传按钮
+            const addBtn = document.createElement('label');
+            addBtn.className = 'photo-add-btn';
+            addBtn.innerHTML = '<span>+</span><small>添加</small>';
+            addBtn.setAttribute('for', 'file-input');
+            photoGrid.appendChild(addBtn);
+
+            if (uploadedPhotos.length === 0) {
+                const emptyTip = document.createElement('div');
+                emptyTip.className = 'photo-empty';
+                emptyTip.textContent = '暂无照片，点击 + 添加';
+                photoGrid.appendChild(emptyTip);
+            } else {
+                uploadedPhotos.forEach((base64, index) => {
+                    const item = document.createElement('div');
+                    item.className = 'photo-item';
+
+                    const img = document.createElement('img');
+                    img.src = base64;
+                    img.alt = `照片 ${index + 1}`;
+
+                    const deleteBtn = document.createElement('button');
+                    deleteBtn.className = 'photo-item-delete';
+                    deleteBtn.innerHTML = '✕';
+                    deleteBtn.onclick = (e) => {
+                        e.stopPropagation();
+                        deletePhoto(index);
+                    };
+
+                    item.appendChild(img);
+                    item.appendChild(deleteBtn);
+                    photoGrid.appendChild(item);
+                });
+            }
+
+            updatePhotoCount();
+        }
+
+        // 删除照片
+        async function deletePhoto(index) {
+            uploadedPhotos.splice(index, 1);
+            await syncPhotosToDB();
+
+            // 从 3D 场景中移除对应的照片 mesh（索引+1是因为第一个是默认的"圣诞快乐"照片）
+            const meshIndex = index + 1;
+            if (meshIndex < photoMeshGroup.children.length) {
+                const child = photoMeshGroup.children[meshIndex];
+                // 释放 Three.js 资源防止内存泄漏
+                child.traverse((obj) => {
+                    if (obj.geometry) obj.geometry.dispose();
+                    if (obj.material) {
+                        if (obj.material.map) obj.material.map.dispose();
+                        obj.material.dispose();
+                    }
+                });
+                photoMeshGroup.remove(child);
+            }
+
+            // 从粒子系统中移除对应的照片粒子
+            // 找到所有 PHOTO 类型的粒子，移除对应索引的那个（跳过第一个默认照片）
+            let photoParticleCount = 0;
+            for (let i = 0; i < particleSystem.length; i++) {
+                if (particleSystem[i].type === 'PHOTO') {
+                    if (photoParticleCount === meshIndex) {
+                        particleSystem.splice(i, 1);
+                        break;
+                    }
+                    photoParticleCount++;
+                }
+            }
+
+            renderPhotoGrid();
+            showToast(`已删除照片`);
+        }
+
+        // 同步照片到数据库
+        async function syncPhotosToDB() {
+            if (!db) return;
+            const tx = db.transaction([STORE_PHOTOS], 'readwrite');
+            const store = tx.objectStore(STORE_PHOTOS);
+            store.clear();
+            uploadedPhotos.forEach(base64 => store.add(base64));
+        }
+
+        // 预加载手势模型（只加载模型，不请求摄像头）
+        let isModelPreloaded = false;
+        let hasEnteredPage = false;  // 标记是否已进入页面
+        let gestureCountdownTimer = null;
+
+        function startGestureCountdown() {
+            let seconds = 30;
+            const countdownEl = document.getElementById('gesture-countdown');
+            const tipEl = document.getElementById('gesture-loading-tip');
+
+            if (gestureCountdownTimer) clearInterval(gestureCountdownTimer);
+            gestureCountdownTimer = setInterval(() => {
+                seconds--;
+                if (countdownEl) {
+                    if (seconds > 0) {
+                        countdownEl.textContent = seconds;
+                    } else {
+                        if (tipEl) tipEl.innerHTML = '⛳ 加载手势操控模型中...即将完成';
+                        clearInterval(gestureCountdownTimer);
+                        gestureCountdownTimer = null;
+                    }
+                }
+            }, 1000);
+        }
+
+        function stopGestureCountdown() {
+            if (gestureCountdownTimer) {
+                clearInterval(gestureCountdownTimer);
+                gestureCountdownTimer = null;
+            }
+        }
+
+        async function preloadGestureModel() {
+            if (handLandmarker) return;
+
+            const loadingTip = document.getElementById('gesture-loading-tip');
+            if (loadingTip && hasEnteredPage) {
+                loadingTip.style.display = 'block';
+                startGestureCountdown();
+            }
+
+            try {
+                console.log('[预加载] 开始加载手势模型...');
+                const vision = await FilesetResolver.forVisionTasks("/js/mediapipe/wasm");
+                handLandmarker = await HandLandmarker.createFromOptions(vision, {
+                    baseOptions: { modelAssetPath: "/assets/hand_landmarker.task", delegate: "GPU" },
+                    runningMode: "VIDEO", numHands: 1
+                });
+                isModelPreloaded = true;
+                console.log('[预加载] 手势模型加载完成');
+
+                if (loadingTip) loadingTip.style.display = 'none';
+                stopGestureCountdown();
+                const gestureStatus = document.getElementById('gesture-status');
+                if (gestureStatus) gestureStatus.innerText = '模型已加载，等待启动...';
+            } catch (err) {
+                console.error('[预加载] 手势模型加载失败:', err);
+                if (loadingTip) loadingTip.style.display = 'none';
+                stopGestureCountdown();
+            }
+        }
+
+        // 使用手机摄像头启动手势识别（PC端专用）
+        async function enableHandTrackingWithPhoneCamera() {
+            console.log('[PC端] 使用手机摄像头启动手势识别...');
+
+            const btn = document.getElementById('camera-btn');
+            const loadingTip = document.getElementById('gesture-loading-tip');
+            const gestureStatus = document.getElementById('gesture-status');
+
+            try {
+                // 如果模型还没加载完成，先加载模型
+                if (!handLandmarker) {
+                    console.log('[PC端] 模型未加载，开始加载...');
+                    if (gestureStatus) gestureStatus.innerText = '正在加载手势操控模型...';
+                    if (loadingTip) {
+                        loadingTip.style.display = 'block';
+                        startGestureCountdown();
+                    }
+                    showToast('正在加载AI模型，请稍候...');
+
+                    const vision = await FilesetResolver.forVisionTasks("/js/mediapipe/wasm");
+                    handLandmarker = await HandLandmarker.createFromOptions(vision, {
+                        baseOptions: { modelAssetPath: "/assets/hand_landmarker.task", delegate: "GPU" },
+                        runningMode: "VIDEO", numHands: 1
+                    });
+
+                    console.log('[PC端] 手势模型加载完成');
+                    if (loadingTip) loadingTip.style.display = 'none';
+                    stopGestureCountdown();
+                }
+
+                // 初始化 webcam canvas 和 context
+                video = document.getElementById('webcam');
+                webcamCanvas = document.getElementById('webcam-preview');
+                webcamCtx = webcamCanvas.getContext('2d');
+                webcamCanvas.width = 160;
+                webcamCanvas.height = 120;
+
+                // 更新状态提示
+                if (gestureStatus) gestureStatus.innerText = '等待手势...';
+
+                // 启动手势检测循环
+                predictWebcam();
+
+                // 更新UI
+                if (btn) {
+                    btn.innerText = "✅ 手势已开启";
+                    btn.classList.add("active");
+                }
+
+                // 隐藏请求摄像头权限按钮（使用手机摄像头时不需要PC摄像头权限）
+                const requestCameraBtnSuccess = document.getElementById('request-camera-btn');
+                if (requestCameraBtnSuccess) requestCameraBtnSuccess.style.display = 'none';
+
+                // 恢复状态提示颜色
+                if (gestureStatus) gestureStatus.style.color = '#aaa';
+
+                showToast('手机摄像头已就绪，请在手机上做手势操作');
+                console.log('[PC端] 手势识别已启动，使用手机摄像头');
+
+            } catch (err) {
+                console.error('[PC端] 手机摄像头手势识别启动失败:', err);
+                if (loadingTip) loadingTip.style.display = 'none';
+                stopGestureCountdown();
+                if (gestureStatus) {
+                    gestureStatus.innerText = '模型加载失败';
+                    gestureStatus.style.color = '#f00';
+                }
+                showToast('手势模型加载失败，请刷新重试');
+            }
+        }
+
+        async function enableHandTracking(isAutoStart = false) {
+            // 防止重复加载摄像头
+            if (video && video.srcObject) {
+                console.log('[PC端] 摄像头已启动，跳过重复初始化');
+                if (!isAutoStart) showToast('手势识别已加载');
+                return;
+            }
+
+            const btn = document.getElementById('camera-btn');
+            const previewToggleBtn = document.getElementById('preview-toggle-btn');
+            const loadingTip = document.getElementById('gesture-loading-tip');
+
+            if (!isAutoStart) {
+                btn.innerText = "⏳ 启动OSS加速...";
+                btn.style.opacity = "0.5";
+            }
+
+            // 显示加载提示
+            if (loadingTip) loadingTip.style.display = 'block';
+
+            try {
+                if (!isAutoStart) showToast("正在加载手势识别引擎...");
+
+                // 如果模型还没预加载完成，先加载模型
+                if (!handLandmarker) {
+                    const vision = await FilesetResolver.forVisionTasks("/js/mediapipe/wasm");
+                    handLandmarker = await HandLandmarker.createFromOptions(vision, {
+                        baseOptions: { modelAssetPath: "/assets/hand_landmarker.task", delegate: "GPU" },
+                        runningMode: "VIDEO", numHands: 1
+                    });
+                }
+
+                video = document.getElementById('webcam');
+                webcamCanvas = document.getElementById('webcam-preview');
+                webcamCtx = webcamCanvas.getContext('2d');
+                webcamCanvas.width = 160; webcamCanvas.height = 120;
+
+                // AI加载完成，更新状态提示
+                document.getElementById('gesture-status').innerText = '等待手势...';
+
+                const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user", width: { ideal: 320 }, height: { ideal: 240 } } });
+                video.srcObject = stream;
+
+                // 确保视频播放（Edge浏览器兼容性）
+                await video.play().catch(e => console.warn('视频自动播放失败:', e));
+
+                // 等待视频有足够数据后才开始检测
+                await new Promise((resolve) => {
+                    if (video.readyState >= video.HAVE_ENOUGH_DATA) {
+                        resolve();
+                    } else {
+                        video.addEventListener('loadeddata', () => resolve(), { once: true });
+                    }
+                });
+
+                // 立即绘制一帧到预览canvas，让用户看到摄像头画面
+                if (video.readyState >= video.HAVE_ENOUGH_DATA) {
+                    webcamCtx.drawImage(video, 0, 0, 160, 120);
+                    console.log('✅ 摄像头画面已显示');
+                } else {
+                    console.warn('⚠️ 视频未准备好, readyState:', video.readyState);
+                }
+
+                // 输出视频流信息到控制台
+                console.log('📹 视频流信息:', {
+                    readyState: video.readyState,
+                    videoWidth: video.videoWidth,
+                    videoHeight: video.videoHeight,
+                    paused: video.paused
+                });
+
+                // 开始手势检测循环
+                predictWebcam();
+
+                btn.innerText = "✅ 手势已开启";
+                btn.classList.add("active");
+
+                if (!isAutoStart) showToast("手势已开启");
+
+                // 隐藏加载提示
+                if (loadingTip) loadingTip.style.display = 'none';
+
+                // 成功启动后隐藏请求权限按钮并恢复状态颜色
+                const requestCameraBtnSuccess = document.getElementById('request-camera-btn');
+                if (requestCameraBtnSuccess) requestCameraBtnSuccess.style.display = 'none';
+                document.getElementById('gesture-status').style.color = '#aaa';
+
+            } catch (err) {
+                // 统一错误处理，自动启动和手动启动都显示错误信息
+                console.error('手势检测启动失败:', err);
+                console.error('错误详情:', {
+                    name: err.name,
+                    message: err.message,
+                    stack: err.stack
+                });
+
+                // 更详细的错误提示
+                let errorMsg = "启动失败";
+                let showRetryBtn = false;  // 是否显示重试按钮
+
+                if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+                    errorMsg = "摄像头权限被拒绝";
+                    showRetryBtn = true;
+                } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
+                    errorMsg = "未找到摄像头";
+                    showRetryBtn = true;
+                } else if (err.name === 'NotReadableError' || err.name === 'TrackStartError') {
+                    errorMsg = "摄像头被占用";
+                    showRetryBtn = true;
+                } else if (err.message && err.message.includes('wasm')) {
+                    errorMsg = "手势模型加载失败，请检查网络连接";
+                }
+
+                if (!isAutoStart) {
+                    btn.innerText = "❌ 启动失败";
+                    setTimeout(() => { btn.innerText = "🖐️ 开启手势"; btn.style.opacity = "1"; }, 3000);
+                    showToast(errorMsg);
+                }
+
+                // 更新状态显示
+                const gestureStatus = document.getElementById('gesture-status');
+                gestureStatus.innerText = errorMsg;
+                gestureStatus.style.color = '#F00';
+
+                // 显示重新请求摄像头权限按钮
+                const requestCameraBtn = document.getElementById('request-camera-btn');
+                if (requestCameraBtn && showRetryBtn) {
+                    requestCameraBtn.style.display = 'block';
+                }
+
+                // 隐藏加载提示
+                if (loadingTip) loadingTip.style.display = 'none';
+            }
+        }
+
+        function showToast(msg) {
+            const t = document.getElementById('toast');
+            t.textContent = msg; t.style.display = 'block';
+            setTimeout(() => { t.style.display = 'none'; }, 3000);
+        }
+
+        function setupUI() {
+            const mainMenuBtn = document.getElementById('main-menu-btn');
+            const menuItems = document.getElementById('menu-items');
+            const webcamWrapper = document.getElementById('webcam-wrapper');
+            const previewToggleBtn = document.getElementById('preview-toggle-btn');
+            const toggleUiBtn = document.getElementById('toggle-ui-btn');
+            const h1 = document.querySelector('h1');
+
+            // 手势操作提示框逻辑
+            const instructionBox = document.getElementById('instruction-box');
+            const instructionClose = document.getElementById('instruction-close');
+            const helpBtn = document.getElementById('help-btn');
+
+            if (instructionClose) {
+                instructionClose.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    instructionBox.classList.remove('show');
+                });
+            }
+
+            if (helpBtn) {
+                helpBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    togglePanel('instruction-box');
+                    // 自动展开菜单
+                    menuItems.classList.add('show');
+                    mainMenuBtn.classList.add('active');
+                    mainMenuBtn.innerText = '✖';
+                });
+            }
+
+            // 初始显示提示框 (延迟一点，且仅首次访问显示)
+            setTimeout(() => {
+                if (instructionBox) {
+                    const INSTRUCTION_SHOWN_KEY = 'xmas_instruction_shown_v1';
+                    const hasShown = localStorage.getItem(INSTRUCTION_SHOWN_KEY);
+                    
+                    if (!hasShown) {
+                        togglePanel('instruction-box');
+                        localStorage.setItem(INSTRUCTION_SHOWN_KEY, 'true');
+                    }
+                }
+            }, 1500);
+
+            // 1. 主菜单逻辑
+            mainMenuBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+
+                // 如果处于极小模式（界面隐藏状态），点击则是唤醒界面
+                if (mainMenuBtn.classList.contains('tiny-mode')) {
+                    mainMenuBtn.classList.remove('tiny-mode');
+                    h1.classList.remove('ui-invisible'); // 显示标题
+                    // 按钮恢复正常
+                    toggleUiBtn.innerText = "👁️ 隐藏UI元素(只有圣诞树)";
+                    showToast("界面已唤醒");
+                    return; // 唤醒时只恢复按钮，不自动展开菜单
+                }
+
+                // 正常状态下：切换菜单展开
+                menuItems.classList.toggle('show');
+                mainMenuBtn.classList.toggle('active');
+                mainMenuBtn.innerText = menuItems.classList.contains('show') ? '✖' : '⚙️';
+            });
+
+            // 2. 隐藏界面逻辑
+            toggleUiBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                // 隐藏标题
+                h1.classList.add('ui-invisible');
+                // 收起菜单
+                menuItems.classList.remove('show');
+                mainMenuBtn.classList.remove('active');
+                mainMenuBtn.innerText = '⚙️';
+                // 按钮进入极小模式
+                mainMenuBtn.classList.add('tiny-mode');
+
+                showToast("点击左下角光点可唤醒");
+            });
+
+            // 3. 预览显隐
+            previewToggleBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                isPreviewVisible = !isPreviewVisible;
+                webcamWrapper.style.opacity = isPreviewVisible ? 1 : 0;
+                previewToggleBtn.innerText = isPreviewVisible ? "🖼️ 隐藏预览" : "🖼️ 显示预览";
+                previewToggleBtn.classList.toggle("active", isPreviewVisible);
+            });
+
+            // 4. 摄像头/手势控制按钮
+            const cameraBtn = document.getElementById('camera-btn');
+            if (cameraBtn) {
+                cameraBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    // 检查是否已经启动
+                    if (cameraBtn.classList.contains('active')) {
+                        showToast("手势控制已开启");
+                    } else {
+                        // 手动启动手势检测
+                        enableHandTracking(false);
+                    }
+                });
+            }
+
+            // 4.5 请求摄像头权限按钮(在摄像头框内)
+            const requestCameraBtn = document.getElementById('request-camera-btn');
+            if (requestCameraBtn) {
+                requestCameraBtn.addEventListener('click', async (e) => {
+                    e.stopPropagation();
+                    // 隐藏按钮并显示加载状态
+                    requestCameraBtn.style.display = 'none';
+                    const gestureStatus = document.getElementById('gesture-status');
+                    gestureStatus.innerText = '正在请求摄像头权限...';
+                    gestureStatus.style.color = '#FFA500';  // 橙色表示加载中
+
+                    // 重新尝试启动手势检测
+                    await enableHandTracking(false);
+                });
+            }
+
+            // 6. 更多功能下拉菜单
+            const moreFunctionsBtn = document.getElementById('more-functions-btn');
+            const moreFunctionsMenu = document.getElementById('more-functions-menu');
+
+            if (moreFunctionsBtn && moreFunctionsMenu) {
+                moreFunctionsBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    moreFunctionsMenu.classList.toggle('show');
+                    // 更新按钮文本
+                    if (moreFunctionsMenu.classList.contains('show')) {
+                        moreFunctionsBtn.textContent = '🔧 收起功能';
+                    } else {
+                        moreFunctionsBtn.textContent = '🔧 更多功能';
+                    }
+                });
+            }
+
+            document.getElementById('clear-music-btn').addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (confirm("确定要恢复默认音乐吗？")) {
+                    clearMusicData();
+                    // 重置音乐名称显示
+                    const currentMusicNameEl = document.getElementById('current-music-name');
+                    if (currentMusicNameEl) {
+                        currentMusicNameEl.textContent = '默认音乐';
+                    }
+                    localStorage.removeItem('customMusicName');
+                }
+            });
+
+            // ========== 面板拖动和缩放功能 ==========
+            function initPanelDragAndResize() {
+                const panels = document.querySelectorAll('.panel-draggable');
+
+                panels.forEach(panel => {
+                    const header = panel.querySelector('.panel-header');
+                    const maximizeBtn = panel.querySelector('.panel-maximize-btn');
+                    const resizeHandle = panel.querySelector('.panel-resize-handle');
+
+                    let isDragging = false;
+                    let isResizing = false;
+                    let startX, startY, startLeft, startTop, startWidth, startHeight;
+
+                    // 拖动功能
+                    if (header) {
+                        header.addEventListener('mousedown', startDrag);
+                        header.addEventListener('touchstart', startDrag, { passive: false });
+                    }
+
+                    function startDrag(e) {
+                        // 如果点击的是按钮，不启动拖动
+                        if (e.target.tagName === 'BUTTON' || e.target.closest('button')) return;
+
+                        isDragging = true;
+                        panel.classList.add('dragging');
+
+                        const rect = panel.getBoundingClientRect();
+                        const clientX = e.type.includes('touch') ? e.touches[0].clientX : e.clientX;
+                        const clientY = e.type.includes('touch') ? e.touches[0].clientY : e.clientY;
+
+                        startX = clientX;
+                        startY = clientY;
+                        startLeft = rect.left;
+                        startTop = rect.top;
+
+                        // 移除bottom定位，改用top定位
+                        panel.style.bottom = 'auto';
+                        panel.style.left = startLeft + 'px';
+                        panel.style.top = startTop + 'px';
+                        panel.style.position = 'fixed';
+
+                        document.addEventListener('mousemove', drag);
+                        document.addEventListener('mouseup', stopDrag);
+                        document.addEventListener('touchmove', drag, { passive: false });
+                        document.addEventListener('touchend', stopDrag);
+
+                        e.preventDefault();
+                    }
+
+                    function drag(e) {
+                        if (!isDragging) return;
+
+                        const clientX = e.type.includes('touch') ? e.touches[0].clientX : e.clientX;
+                        const clientY = e.type.includes('touch') ? e.touches[0].clientY : e.clientY;
+
+                        let newLeft = startLeft + (clientX - startX);
+                        let newTop = startTop + (clientY - startY);
+
+                        // 边界限制
+                        newLeft = Math.max(0, Math.min(newLeft, window.innerWidth - panel.offsetWidth));
+                        newTop = Math.max(0, Math.min(newTop, window.innerHeight - panel.offsetHeight));
+
+                        panel.style.left = newLeft + 'px';
+                        panel.style.top = newTop + 'px';
+
+                        e.preventDefault();
+                    }
+
+                    function stopDrag() {
+                        isDragging = false;
+                        panel.classList.remove('dragging');
+                        document.removeEventListener('mousemove', drag);
+                        document.removeEventListener('mouseup', stopDrag);
+                        document.removeEventListener('touchmove', drag);
+                        document.removeEventListener('touchend', stopDrag);
+                    }
+
+                    // 放大/缩小功能
+                    if (maximizeBtn) {
+                        maximizeBtn.addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            panel.classList.toggle('panel-maximized');
+                            if (panel.classList.contains('panel-maximized')) {
+                                maximizeBtn.textContent = '✖';
+                                maximizeBtn.title = '还原';
+                            } else {
+                                maximizeBtn.textContent = '⛶';
+                                maximizeBtn.title = '放大';
+                                // 还原时重置位置
+                                panel.style.left = '';
+                                panel.style.top = '';
+                                panel.style.bottom = '';
+                                panel.style.width = '';
+                                panel.style.height = '';
+                                panel.style.position = '';
+                            }
+                        });
+                    }
+
+                    // 缩放功能
+                    if (resizeHandle) {
+                        resizeHandle.addEventListener('mousedown', startResize);
+                        resizeHandle.addEventListener('touchstart', startResize, { passive: false });
+                    }
+
+                    function startResize(e) {
+                        isResizing = true;
+                        panel.classList.add('dragging');
+
+                        const clientX = e.type.includes('touch') ? e.touches[0].clientX : e.clientX;
+                        const clientY = e.type.includes('touch') ? e.touches[0].clientY : e.clientY;
+
+                        startX = clientX;
+                        startY = clientY;
+                        startWidth = panel.offsetWidth;
+                        startHeight = panel.offsetHeight;
+
+                        document.addEventListener('mousemove', resize);
+                        document.addEventListener('mouseup', stopResize);
+                        document.addEventListener('touchmove', resize, { passive: false });
+                        document.addEventListener('touchend', stopResize);
+
+                        e.preventDefault();
+                        e.stopPropagation();
+                    }
+
+                    function resize(e) {
+                        if (!isResizing) return;
+
+                        const clientX = e.type.includes('touch') ? e.touches[0].clientX : e.clientX;
+                        const clientY = e.type.includes('touch') ? e.touches[0].clientY : e.clientY;
+
+                        let newWidth = startWidth + (clientX - startX);
+                        let newHeight = startHeight + (clientY - startY);
+
+                        // 最小尺寸限制
+                        newWidth = Math.max(200, newWidth);
+                        newHeight = Math.max(150, newHeight);
+
+                        panel.style.width = newWidth + 'px';
+                        panel.style.height = newHeight + 'px';
+                        panel.style.maxWidth = 'none';
+                        panel.style.maxHeight = 'none';
+
+                        e.preventDefault();
+                    }
+
+                    function stopResize() {
+                        isResizing = false;
+                        panel.classList.remove('dragging');
+                        document.removeEventListener('mousemove', resize);
+                        document.removeEventListener('mouseup', stopResize);
+                        document.removeEventListener('touchmove', resize);
+                        document.removeEventListener('touchend', stopResize);
+                    }
+                });
+            }
+
+            // 初始化面板拖动和缩放
+            initPanelDragAndResize();
+
+            // ========== 面板统一管理 ==========
+            const allPanels = {
+                'particle-settings': document.getElementById('particle-settings'),
+                'title-settings': document.getElementById('title-settings'),
+                'music-manager': document.getElementById('music-manager'),
+                'photo-manager': document.getElementById('photo-manager'),
+                'bg-manager': document.getElementById('bg-manager'),
+                'instruction-box': document.getElementById('instruction-box')
+            };
+
+            // 关闭所有面板
+            function closeAllPanels(exceptId = null) {
+                Object.entries(allPanels).forEach(([id, panel]) => {
+                    if (id !== exceptId && panel) {
+                        panel.classList.remove('show');
+                    }
+                });
+            }
+
+            // 切换面板显示状态
+            function togglePanel(panelId, callback) {
+                const panel = allPanels[panelId];
+                if (!panel) return;
+                const isOpening = !panel.classList.contains('show');
+                if (isOpening) {
+                    closeAllPanels(panelId);
+                }
+                panel.classList.toggle('show');
+                if (callback && isOpening) callback();
+            }
+
+            // 统一的点击空白关闭面板事件
+            document.addEventListener('click', (e) => {
+                // 检查是否点击在面板外部
+                const clickedInsidePanel = Object.values(allPanels).some(panel =>
+                    panel && (e.target.closest(`#${panel.id}`) || e.target.closest(`#${panel.id.replace('-manager', '-manage-btn').replace('-settings', '-settings-btn')}`)));
+                
+                // 特殊处理帮助按钮
+                const isHelpBtn = e.target.closest('#help-btn');
+
+                if (!clickedInsidePanel && !isHelpBtn) {
+                    // 检查是否点击了对应的按钮
+                    const btnIds = ['particle-settings-btn', 'title-settings-btn', 'music-manage-btn', 'photo-manage-btn', 'bg-manage-btn'];
+                    const clickedBtn = btnIds.some(btnId => e.target.closest(`#${btnId}`));
+                    if (!clickedBtn) {
+                        closeAllPanels();
+                    }
+                }
+
+                // 菜单关闭逻辑
+                if (!e.target.closest('.menu-container')) {
+                    const mainMenuBtn = document.getElementById('main-menu-btn');
+                    const menuItems = document.getElementById('menu-items');
+                    menuItems.classList.remove('show');
+                    if (!mainMenuBtn.classList.contains('tiny-mode')) {
+                        mainMenuBtn.classList.remove('active');
+                        mainMenuBtn.innerText = '⚙️';
+                    }
+                }
+            });
+
+            // File inputs
+            // 粒子设置面板逻辑
+            const particleSettingsBtn = document.getElementById('particle-settings-btn');
+            const particleSettingsPanel = document.getElementById('particle-settings');
+            const particleSettingsClose = document.getElementById('particle-settings-close');
+            const particleSlider = document.getElementById('particle-slider');
+            const dustSlider = document.getElementById('dust-slider');
+            const particleValueSpan = document.getElementById('particle-value');
+            const dustValueSpan = document.getElementById('dust-value');
+            const applyParticleBtn = document.getElementById('apply-particle-btn');
+            const resetParticleBtn = document.getElementById('reset-particle-btn');
+            const deviceHint = document.getElementById('device-hint');
+
+            // 默认粒子数量
+            const DEFAULT_PARTICLES = { count: isMobile ? 500 : 1500, dustCount: isMobile ? 600 : 2500 };
+
+            // 设置设备提示和默认值
+            deviceHint.textContent = `当前设备: ${isMobile ? '📱 移动端' : '💻 PC端'}`;
+
+            // 设置滑块范围和当前值
+            if (isMobile) {
+                particleSlider.min = 100;
+                particleSlider.max = 1000;
+                dustSlider.min = 0;
+                dustSlider.max = 1500;
+            } else {
+                particleSlider.min = 300;
+                particleSlider.max = 3000;
+                dustSlider.min = 0;
+                dustSlider.max = 5000;
+            }
+            particleSlider.value = CONFIG.particles.count;
+            dustSlider.value = CONFIG.particles.dustCount;
+            particleValueSpan.textContent = CONFIG.particles.count;
+            dustValueSpan.textContent = CONFIG.particles.dustCount;
+
+            // 滑块实时更新显示值
+            particleSlider.addEventListener('input', () => {
+                particleValueSpan.textContent = particleSlider.value;
+            });
+            dustSlider.addEventListener('input', () => {
+                dustValueSpan.textContent = dustSlider.value;
+            });
+
+            // 打开粒子设置面板
+            particleSettingsBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                togglePanel('particle-settings');
+            });
+
+            // 关闭粒子设置面板
+            particleSettingsClose.addEventListener('click', (e) => {
+                e.stopPropagation();
+                particleSettingsPanel.classList.remove('show');
+            });
+
+            // 应用粒子设置
+            applyParticleBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const newCount = parseInt(particleSlider.value);
+                const newDustCount = parseInt(dustSlider.value);
+
+                // 保存到 localStorage
+                localStorage.setItem(PARTICLE_SETTINGS_KEY, JSON.stringify({
+                    count: newCount,
+                    dustCount: newDustCount
+                }));
+
+                showToast(`✨ 粒子设置已保存，刷新页面生效`);
+                particleSettingsPanel.classList.remove('show');
+
+                // 提示用户是否立即刷新
+                setTimeout(() => {
+                    if (confirm('是否立即刷新页面应用新设置？')) {
+                        location.reload();
+                    }
+                }, 500);
+            });
+
+            // 恢复默认粒子设置
+            resetParticleBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+
+                // 清除 localStorage 中的设置
+                localStorage.removeItem(PARTICLE_SETTINGS_KEY);
+
+                // 更新滑块到默认值
+                particleSlider.value = DEFAULT_PARTICLES.count;
+                dustSlider.value = DEFAULT_PARTICLES.dustCount;
+                particleValueSpan.textContent = DEFAULT_PARTICLES.count;
+                dustValueSpan.textContent = DEFAULT_PARTICLES.dustCount;
+
+                showToast(`🔄 已恢复默认设置`);
+
+                // 如果当前设置与默认不同，提示刷新
+                if (CONFIG.particles.count !== DEFAULT_PARTICLES.count ||
+                    CONFIG.particles.dustCount !== DEFAULT_PARTICLES.dustCount) {
+                    setTimeout(() => {
+                        if (confirm('是否立即刷新页面应用默认设置？')) {
+                            location.reload();
+                        }
+                    }, 500);
+                }
+            });
+
+            // 标题设置面板逻辑
+            const titleSettingsBtn = document.getElementById('title-settings-btn');
+            const titleSettings = document.getElementById('title-settings');
+            const titleSettingsClose = document.getElementById('title-settings-close');
+            const mainTitleInput = document.getElementById('main-title-input');
+            const enterTitleInput = document.getElementById('enter-title-input');
+            const applyTitleBtn = document.getElementById('apply-title-btn');
+            const resetTitleBtn = document.getElementById('reset-title-btn');
+            const mainTitleEl = document.querySelector('#ui-content h1');
+            const enterTitleEl = document.querySelector('.enter-title');
+            const DEFAULT_MAIN_TITLE = 'Merry Christmas';
+            const DEFAULT_ENTER_TITLE = 'Merry Christmas';
+
+            // 加载保存的标题
+            function loadSavedTitles() {
+                const savedMainTitle = localStorage.getItem('customMainTitle');
+                const savedEnterTitle = localStorage.getItem('customEnterTitle');
+                if (savedMainTitle) {
+                    mainTitleEl.textContent = savedMainTitle;
+                    mainTitleInput.value = savedMainTitle;
+                }
+                if (savedEnterTitle) {
+                    enterTitleEl.textContent = savedEnterTitle;
+                    enterTitleInput.value = savedEnterTitle;
+                }
+            }
+            loadSavedTitles();
+
+            titleSettingsBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                togglePanel('title-settings');
+            });
+
+            titleSettingsClose.addEventListener('click', (e) => {
+                e.stopPropagation();
+                titleSettings.classList.remove('show');
+            });
+
+            applyTitleBtn.addEventListener('click', () => {
+                const newMainTitle = mainTitleInput.value.trim() || DEFAULT_MAIN_TITLE;
+                const newEnterTitle = enterTitleInput.value.trim() || DEFAULT_ENTER_TITLE;
+                mainTitleEl.textContent = newMainTitle;
+                enterTitleEl.textContent = newEnterTitle;
+                localStorage.setItem('customMainTitle', newMainTitle);
+                localStorage.setItem('customEnterTitle', newEnterTitle);
+                showToast('🏷️ 标题已更新');
+                titleSettings.classList.remove('show');
+            });
+
+            resetTitleBtn.addEventListener('click', () => {
+                mainTitleInput.value = DEFAULT_MAIN_TITLE;
+                enterTitleInput.value = DEFAULT_ENTER_TITLE;
+                mainTitleEl.textContent = DEFAULT_MAIN_TITLE;
+                enterTitleEl.textContent = DEFAULT_ENTER_TITLE;
+                localStorage.removeItem('customMainTitle');
+                localStorage.removeItem('customEnterTitle');
+                showToast('🔄 标题已恢复默认');
+            });
+
+            // 音乐管理面板逻辑
+            const musicManageBtn = document.getElementById('music-manage-btn');
+            const musicManager = document.getElementById('music-manager');
+            const musicManagerClose = document.getElementById('music-manager-close');
+            const currentMusicName = document.getElementById('current-music-name');
+
+            // 加载保存的音乐名称
+            function loadMusicName() {
+                const savedName = localStorage.getItem('customMusicName');
+                if (savedName && currentMusicName) {
+                    currentMusicName.textContent = savedName;
+                }
+            }
+            loadMusicName();
+
+            musicManageBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                togglePanel('music-manager');
+            });
+
+            musicManagerClose.addEventListener('click', (e) => {
+                e.stopPropagation();
+                musicManager.classList.remove('show');
+            });
+
+            // 图片管理面板逻辑
+            const photoManagerBtn = document.getElementById('photo-manage-btn');
+            const photoManager = document.getElementById('photo-manager');
+            const photoManagerClose = document.getElementById('photo-manager-close');
+            const photoGrid = document.getElementById('photo-grid');
+            const photoCountSpan = document.getElementById('photo-count');
+
+            // 打开图片管理面板
+            photoManagerBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                togglePanel('photo-manager', renderPhotoGrid);
+            });
+
+            // 关闭图片管理面板
+            photoManagerClose.addEventListener('click', (e) => {
+                e.stopPropagation();
+                photoManager.classList.remove('show');
+            });
+
+            // 清空照片按钮
+            document.getElementById('clear-photos-btn').addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (uploadedPhotos.length === 0) {
+                    showToast('暂无照片可清空');
+                    return;
+                }
+                if (confirm('确定要清空所有已上传的照片吗？')) {
+                    // 清空数据库
+                    clearPhotoData();
+
+                    // 清空本地数组
+                    uploadedPhotos.length = 0;
+
+                    // 清空 3D 场景中的照片（保留默认的圣诞快乐照片）
+                    while (photoMeshGroup.children.length > 1) {
+                        const child = photoMeshGroup.children[photoMeshGroup.children.length - 1];
+                        photoMeshGroup.remove(child);
+                    }
+
+                    // 从粒子系统中移除用户上传的照片粒子（保留第一个默认照片）
+                    const firstPhotoIndex = particleSystem.findIndex(p => p.type === 'PHOTO');
+                    for (let i = particleSystem.length - 1; i > firstPhotoIndex; i--) {
+                        if (particleSystem[i].type === 'PHOTO') {
+                            particleSystem.splice(i, 1);
+                        }
+                    }
+
+                    // 刷新图片管理面板
+                    renderPhotoGrid();
+
+                    showToast('🗑️ 照片已清空');
+                }
+            });
+
+
+
+            // 文件上传处理（保持原图）
+            document.getElementById('file-input').addEventListener('change', (e) => {
+                const files = e.target.files; if (!files.length) return;
+                const totalFiles = files.length;
+                let loadedCount = 0;
+
+                Array.from(files).forEach(f => {
+                    const reader = new FileReader();
+                    reader.onload = (ev) => {
+                        const base64 = ev.target.result;
+                        uploadedPhotos.push(base64);
+                        savePhotoToDB(base64);
+                        new THREE.TextureLoader().load(
+                            base64,
+                            (t) => { t.colorSpace = THREE.SRGBColorSpace; addPhotoToScene(t); },
+                            undefined,
+                            (err) => { console.warn('图片纹理加载失败:', err); }
+                        );
+                        loadedCount++;
+                        renderPhotoGrid();
+                        if (loadedCount === totalFiles) {
+                            showToast(`✅ 已上传 ${totalFiles} 张照片`);
+                        }
+                    };
+                    reader.readAsDataURL(f);
+                });
+                e.target.value = '';
+            });
+
+            document.getElementById('music-input').addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                saveMusicToDB(file);
+                localStorage.removeItem(MUSIC_STATE_KEY); // 更换音乐时清除暂停状态
+                playMusic(file);
+                // 更新音乐名称显示
+                const musicName = file.name.replace(/\.[^/.]+$/, "");
+                const currentMusicNameEl = document.getElementById('current-music-name');
+                if (currentMusicNameEl) {
+                    currentMusicNameEl.textContent = musicName;
+                }
+                localStorage.setItem('customMusicName', musicName);
+                showToast("🎵 音乐已更换");
+            });
+
+            // 菜单音乐控制按钮逻辑
+            const menuMusicToggleBtn = document.getElementById('menu-music-toggle-btn');
+            function updateMenuMusicBtn() {
+                if (isMusicPlaying) {
+                    menuMusicToggleBtn.innerHTML = '⏸️ 暂停音乐';
+                    menuMusicToggleBtn.classList.add('active');
+                } else {
+                    menuMusicToggleBtn.innerHTML = '▶️ 播放音乐';
+                    menuMusicToggleBtn.classList.remove('active');
+                }
+            }
+            menuMusicToggleBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (isMusicPlaying) {
+                    bgAudio.pause();
+                    updatePlayBtn(false);
+                    localStorage.setItem(MUSIC_STATE_KEY, 'paused'); // 用户手动暂停
+                } else {
+                    bgAudio.play();
+                    updatePlayBtn(true);
+                    localStorage.setItem(MUSIC_STATE_KEY, 'playing'); // 用户手动播放
+                }
+                updateMenuMusicBtn();
+            });
+            // 初始化按钮状态
+            updateMenuMusicBtn();
+            // 监听音乐状态变化
+            bgAudio.addEventListener('play', () => {
+                updatePlayBtn(true);
+                updateMenuMusicBtn();
+            });
+            bgAudio.addEventListener('pause', () => {
+                updatePlayBtn(false);
+                updateMenuMusicBtn();
+            });
+
+            // 背景设置面板逻辑
+            const bgManageBtn = document.getElementById('bg-manage-btn');
+            const bgManager = document.getElementById('bg-manager');
+            const bgManagerClose = document.getElementById('bg-manager-close');
+            const bgInput = document.getElementById('bg-input');
+            const resetBgBtn = document.getElementById('reset-bg-btn');
+
+            // 打开背景设置面板
+            bgManageBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                togglePanel('bg-manager');
+            });
+
+            // 关闭背景设置面板
+            bgManagerClose.addEventListener('click', (e) => {
+                e.stopPropagation();
+                bgManager.classList.remove('show');
+            });
+
+            // 上传背景图片
+            bgInput.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = (ev) => {
+                    const base64 = ev.target.result;
+                    saveBackgroundToDB(base64);
+                    applyBackgroundImage(base64);
+                    updateBgPreview(base64);
+                    showToast("🌌 背景已更换");
+                };
+                reader.readAsDataURL(file);
+                e.target.value = '';
+            });
+
+            // 恢复默认背景
+            resetBgBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (confirm('确定要恢复默认背景吗？')) {
+                    clearBackgroundData();
+                }
+            });
+        }
+
+        // --- Three.js Logic ---
+        function initThree() {
+            const container = document.getElementById('canvas-container');
+            scene = new THREE.Scene(); scene.background = new THREE.Color(CONFIG.colors.bg);
+            scene.fog = new THREE.FogExp2(CONFIG.colors.bg, 0.01);
+            camera = new THREE.PerspectiveCamera(42, window.innerWidth / window.innerHeight, 0.1, 1000);
+            adjustCameraPosition();
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, powerPreference: "high-performance" });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            renderer.toneMapping = THREE.ReinhardToneMapping; renderer.toneMappingExposure = 2.2;
+            container.appendChild(renderer.domElement);
+            controls = new OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true; controls.dampingFactor = 0.05; controls.enableZoom = true;
+            mainGroup = new THREE.Group(); scene.add(mainGroup);
+        }
+
+        function adjustCameraPosition() {
+            const aspect = window.innerWidth / window.innerHeight;
+            if (aspect < 1) camera.position.set(0, 5, CONFIG.camera.z + (1 / aspect) * 15);
+            else camera.position.set(0, 2, CONFIG.camera.z);
+            camera.lookAt(0, 0, 0);
+        }
+
+        function setupEnvironment() {
+            const pmremGenerator = new THREE.PMREMGenerator(renderer);
+            scene.environment = pmremGenerator.fromScene(new RoomEnvironment(), 0.04).texture;
+        }
+
+        function setupLights() {
+            const ambient = new THREE.AmbientLight(0xffffff, 0.6); scene.add(ambient);
+            const innerLight = new THREE.PointLight(0xffaa00, 2, 20); innerLight.position.set(0, 5, 0); mainGroup.add(innerLight);
+            const spotGold = new THREE.SpotLight(0xffcc66, 1200); spotGold.position.set(30, 40, 40); scene.add(spotGold);
+            const spotBlue = new THREE.SpotLight(0x6688ff, 600); spotBlue.position.set(-30, 20, -30); scene.add(spotBlue);
+            const fill = new THREE.DirectionalLight(0xffeebb, 0.8); fill.position.set(0, 0, 50); scene.add(fill);
+        }
+
+        function setupPostProcessing() {
+            const renderScene = new RenderPass(scene, camera);
+            const bloomRadius = isMobile ? 0.2 : 0.4;
+            const pixelRatio = Math.min(window.devicePixelRatio, 2);
+            const bloomPass = new UnrealBloomPass(
+                new THREE.Vector2(window.innerWidth * pixelRatio, window.innerHeight * pixelRatio),
+                1.5,
+                bloomRadius,
+                0.85
+            );
+            bloomPass.threshold = 0.7; bloomPass.strength = 0.45; bloomPass.radius = bloomRadius;
+            composer = new EffectComposer(renderer);
+            composer.setPixelRatio(pixelRatio);
+            composer.addPass(renderScene);
+            composer.addPass(bloomPass);
+        }
+
+        function createTextures() {
+            const canvas = document.createElement('canvas'); canvas.width = 128; canvas.height = 128;
+            const ctx = canvas.getContext('2d'); ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, 128, 128);
+            ctx.fillStyle = '#880000'; ctx.beginPath();
+            for (let i = -128; i < 256; i += 32) { ctx.moveTo(i, 0); ctx.lineTo(i + 32, 128); ctx.lineTo(i + 16, 128); ctx.lineTo(i - 16, 0); }
+            ctx.fill();
+            caneTexture = new THREE.CanvasTexture(canvas); caneTexture.wrapS = THREE.RepeatWrapping; caneTexture.wrapT = THREE.RepeatWrapping; caneTexture.repeat.set(3, 3);
+        }
+
+        // 照片粒子类（保持 Mesh 方式，因为每个纹理不同）
+        class PhotoParticle {
+            constructor(mesh) {
+                this.mesh = mesh;
+                this.type = 'PHOTO';
+                this.posTree = new THREE.Vector3();
+                this.posScatter = new THREE.Vector3();
+                this.baseScale = mesh.scale.x;
+                this.spinSpeed = new THREE.Vector3((Math.random() - 0.5) * 0.3, (Math.random() - 0.5) * 0.3, (Math.random() - 0.5) * 0.3);
+                this.calculatePositions();
+            }
+            calculatePositions() {
+                const h = CONFIG.particles.treeHeight;
+                let t = Math.random(); t = Math.pow(t, 0.8);
+                const y = (t * h) - (h / 2);
+                let rMax = CONFIG.particles.treeRadius * (1.0 - t); if (rMax < 0.5) rMax = 0.5;
+                const angle = t * 50 * Math.PI + Math.random() * Math.PI;
+                const r = rMax * (0.8 + Math.random() * 0.4);
+                this.posTree.set(Math.cos(angle) * r, y, Math.sin(angle) * r);
+                const rScatter = 8 + Math.random() * 12;
+                const theta = Math.random() * Math.PI * 2;
+                const phi = Math.acos(2 * Math.random() - 1);
+                this.posScatter.set(rScatter * Math.sin(phi) * Math.cos(theta), rScatter * Math.sin(phi) * Math.sin(theta), rScatter * Math.cos(phi));
+            }
+            update(dt, mode, focusTargetMesh) {
+                let target = this.posTree;
+                if (mode === 'SCATTER') target = this.posScatter;
+                else if (mode === 'FOCUS') {
+                    if (this.mesh === focusTargetMesh) {
+                        const zOffset = isMobile ? 45 : 35;
+                        const desiredWorldPos = new THREE.Vector3(0, 2, zOffset);
+                        const invMatrix = new THREE.Matrix4().copy(mainGroup.matrixWorld).invert();
+                        target = desiredWorldPos.applyMatrix4(invMatrix);
+                    } else { target = this.posScatter; }
+                }
+                const lerpSpeed = (mode === 'FOCUS' && this.mesh === focusTargetMesh) ? 5.0 : 2.0;
+                this.mesh.position.lerp(target, lerpSpeed * dt);
+                if (mode === 'SCATTER') {
+                    this.mesh.rotation.x += this.spinSpeed.x * dt;
+                    this.mesh.rotation.y += this.spinSpeed.y * dt;
+                    this.mesh.rotation.z += this.spinSpeed.z * dt;
+                } else if (mode === 'TREE') {
+                    this.mesh.rotation.x = THREE.MathUtils.lerp(this.mesh.rotation.x, 0, dt);
+                    this.mesh.rotation.z = THREE.MathUtils.lerp(this.mesh.rotation.z, 0, dt);
+                    this.mesh.rotation.y += 0.5 * dt;
+                }
+                if (mode === 'FOCUS' && this.mesh === focusTargetMesh) this.mesh.lookAt(camera.position);
+                let s = this.baseScale;
+                if (mode === 'SCATTER') s = this.baseScale * 2.5;
+                else if (mode === 'FOCUS') {
+                    if (this.mesh === focusTargetMesh) s = isMobile ? 3.5 : 4.5;
+                    else s = this.baseScale * 0.8;
+                }
+                this.mesh.scale.lerp(new THREE.Vector3(s, s, s), 4 * dt);
+            }
+        }
+
+        // 计算粒子在树形和散开模式下的位置
+        function calculateParticlePositions(isDust = false) {
+            const h = CONFIG.particles.treeHeight;
+            let t = Math.random(); t = Math.pow(t, 0.8);
+            const y = (t * h) - (h / 2);
+            let rMax = CONFIG.particles.treeRadius * (1.0 - t); if (rMax < 0.5) rMax = 0.5;
+            const angle = t * 50 * Math.PI + Math.random() * Math.PI;
+            const r = rMax * (0.8 + Math.random() * 0.4);
+            const posTree = new THREE.Vector3(Math.cos(angle) * r, y, Math.sin(angle) * r);
+
+            const rScatter = isDust ? (12 + Math.random() * 20) : (8 + Math.random() * 12);
+            const theta = Math.random() * Math.PI * 2;
+            const phi = Math.acos(2 * Math.random() - 1);
+            const posScatter = new THREE.Vector3(
+                rScatter * Math.sin(phi) * Math.cos(theta),
+                rScatter * Math.sin(phi) * Math.sin(theta),
+                rScatter * Math.cos(phi)
+            );
+
+            return { posTree, posScatter };
+        }
+
+        function createParticles() {
+            const sphereGeo = new THREE.SphereGeometry(0.5, 12, 12);
+            const boxGeo = new THREE.BoxGeometry(0.55, 0.55, 0.55);
+            const curve = new THREE.CatmullRomCurve3([
+                new THREE.Vector3(0, -0.5, 0),
+                new THREE.Vector3(0, 0.3, 0),
+                new THREE.Vector3(0.1, 0.5, 0),
+                new THREE.Vector3(0.3, 0.4, 0)
+            ]);
+            const candyGeo = new THREE.TubeGeometry(curve, 8, 0.08, 5, false);
+
+            const goldMat = new THREE.MeshStandardMaterial({ color: CONFIG.colors.champagneGold, metalness: 1.0, roughness: 0.1, envMapIntensity: 2.0, emissive: 0x443300, emissiveIntensity: 0.3 });
+            const greenMat = new THREE.MeshStandardMaterial({ color: CONFIG.colors.deepGreen, metalness: 0.2, roughness: 0.8, emissive: 0x002200, emissiveIntensity: 0.2 });
+            const redMat = new THREE.MeshPhysicalMaterial({ color: CONFIG.colors.accentRed, metalness: 0.3, roughness: 0.2, clearcoat: 1.0, emissive: 0x330000 });
+            const candyMat = new THREE.MeshStandardMaterial({ map: caneTexture, roughness: 0.4 });
+
+            // 先统计各类型粒子数量
+            const counts = { BOX: 0, GOLD_BOX: 0, GOLD_SPHERE: 0, RED: 0, CANE: 0 };
+            const typeAssignments = [];
+
+            for (let i = 0; i < CONFIG.particles.count; i++) {
+                const rand = Math.random();
+                let type;
+                if (rand < 0.40) type = 'BOX';
+                else if (rand < 0.70) type = 'GOLD_BOX';
+                else if (rand < 0.92) type = 'GOLD_SPHERE';
+                else if (rand < 0.97) type = 'RED';
+                else type = 'CANE';
+                counts[type]++;
+                typeAssignments.push(type);
+            }
+
+            // 创建 InstancedMesh
+            instancedMeshes = {
+                BOX: new THREE.InstancedMesh(boxGeo, greenMat, counts.BOX),
+                GOLD_BOX: new THREE.InstancedMesh(boxGeo, goldMat, counts.GOLD_BOX),
+                GOLD_SPHERE: new THREE.InstancedMesh(sphereGeo, goldMat, counts.GOLD_SPHERE),
+                RED: new THREE.InstancedMesh(sphereGeo, redMat, counts.RED),
+                CANE: new THREE.InstancedMesh(candyGeo, candyMat, counts.CANE)
+            };
+
+            // 添加到场景
+            Object.values(instancedMeshes).forEach(mesh => {
+                mesh.frustumCulled = false;  // 禁用视锥剔除，避免粒子消失
+                mainGroup.add(mesh);
+            });
+
+            // 为每个类型维护索引计数器
+            const indices = { BOX: 0, GOLD_BOX: 0, GOLD_SPHERE: 0, RED: 0, CANE: 0 };
+
+            // 初始化粒子数据
+            for (let i = 0; i < CONFIG.particles.count; i++) {
+                const type = typeAssignments[i];
+                const { posTree, posScatter } = calculateParticlePositions(false);
+                const baseScale = 0.4 + Math.random() * 0.5;
+                const rotation = new THREE.Euler(Math.random() * 6, Math.random() * 6, Math.random() * 6);
+                const spinSpeed = new THREE.Vector3(
+                    (Math.random() - 0.5) * 2.0,
+                    (Math.random() - 0.5) * 2.0,
+                    (Math.random() - 0.5) * 2.0
+                );
+
+                const pData = {
+                    type,
+                    instanceIndex: indices[type],
+                    position: posTree.clone(),
+                    rotation: rotation.clone(),
+                    scale: baseScale,
+                    baseScale,
+                    posTree,
+                    posScatter,
+                    spinSpeed
+                };
+
+                particleData.push(pData);
+                indices[type]++;
+
+                // 设置初始矩阵
+                dummy.position.copy(posTree);
+                dummy.rotation.copy(rotation);
+                dummy.scale.setScalar(baseScale);
+                dummy.updateMatrix();
+                instancedMeshes[type].setMatrixAt(pData.instanceIndex, dummy.matrix);
+            }
+
+            // 标记矩阵需要更新
+            Object.values(instancedMeshes).forEach(mesh => {
+                mesh.instanceMatrix.needsUpdate = true;
+            });
+
+            // 星星
+            const starGeo = new THREE.OctahedronGeometry(1.2, 0);
+            const starMat = new THREE.MeshStandardMaterial({ color: 0xffdd88, emissive: 0xffaa00, emissiveIntensity: 1.0, metalness: 1.0, roughness: 0 });
+            const star = new THREE.Mesh(starGeo, starMat);
+            star.position.set(0, CONFIG.particles.treeHeight / 2 + 1.2, 0);
+            mainGroup.add(star);
+            mainGroup.add(photoMeshGroup);
+        }
+
+        function createDust() {
+            const dustCount = CONFIG.particles.dustCount;
+            if (dustCount === 0) return;
+
+            // 使用四面体几何体（保持原有的 3D 效果）
+            const dustGeo = new THREE.TetrahedronGeometry(0.08, 0);
+            const dustMat = new THREE.MeshBasicMaterial({
+                color: 0xffeebb,
+                transparent: true,
+                opacity: 0.8
+            });
+
+            // 创建 InstancedMesh
+            dustInstancedMesh = new THREE.InstancedMesh(dustGeo, dustMat, dustCount);
+            dustInstancedMesh.frustumCulled = false;
+
+            // 初始化灰尘粒子数据
+            for (let i = 0; i < dustCount; i++) {
+                const { posTree, posScatter } = calculateParticlePositions(true);
+                const baseScale = 0.5 + Math.random();
+                const rotation = new THREE.Euler(
+                    Math.random() * Math.PI * 2,
+                    Math.random() * Math.PI * 2,
+                    Math.random() * Math.PI * 2
+                );
+                const spinSpeed = new THREE.Vector3(
+                    (Math.random() - 0.5) * 3,
+                    (Math.random() - 0.5) * 3,
+                    (Math.random() - 0.5) * 3
+                );
+
+                dustData.push({
+                    position: posTree.clone(),
+                    rotation: rotation.clone(),
+                    posTree,
+                    posScatter,
+                    baseScale,
+                    scale: 0,  // 树形模式下初始为0
+                    spinSpeed,
+                    id: i
+                });
+
+                // 设置初始矩阵（缩放为0，不可见）
+                dummy.position.copy(posTree);
+                dummy.rotation.copy(rotation);
+                dummy.scale.setScalar(0);
+                dummy.updateMatrix();
+                dustInstancedMesh.setMatrixAt(i, dummy.matrix);
+            }
+
+            dustInstancedMesh.instanceMatrix.needsUpdate = true;
+            mainGroup.add(dustInstancedMesh);
+        }
+
+        function createDefaultPhotos() {
+            const canvas = document.createElement('canvas'); canvas.width = 512; canvas.height = 512; const ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#050505'; ctx.fillRect(0, 0, 512, 512); ctx.strokeStyle = '#eebb66'; ctx.lineWidth = 15; ctx.strokeRect(20, 20, 472, 472);
+            ctx.font = '600 80px "Microsoft YaHei", "SimHei", serif'; ctx.fillStyle = '#eebb66'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+            ctx.fillText("圣诞", 256, 200); ctx.fillText("快乐", 256, 320);
+            const tex = new THREE.CanvasTexture(canvas); tex.colorSpace = THREE.SRGBColorSpace; addPhotoToScene(tex);
+        }
+
+        function addPhotoToScene(texture) {
+            // 根据图片实际比例计算尺寸
+            const maxSize = 1.2;  // 最大边长
+            const borderWidth = 0.1;  // 相框边框宽度
+            let photoWidth = maxSize;
+            let photoHeight = maxSize;
+
+            // 优化纹理质量：设置高质量过滤
+            texture.minFilter = THREE.LinearMipmapLinearFilter;
+            texture.magFilter = THREE.LinearFilter;
+            texture.anisotropy = renderer.capabilities.getMaxAnisotropy();  // 最大各向异性过滤，提升清晰度
+            texture.generateMipmaps = true;
+            texture.needsUpdate = true;
+
+            // 获取纹理的原始图片尺寸
+            if (texture.image) {
+                const imgWidth = texture.image.width || texture.image.videoWidth || 1;
+                const imgHeight = texture.image.height || texture.image.videoHeight || 1;
+                const aspectRatio = imgWidth / imgHeight;
+
+                if (aspectRatio > 1) {
+                    // 横向图片：宽度为最大，高度按比例缩小
+                    photoWidth = maxSize;
+                    photoHeight = maxSize / aspectRatio;
+                } else if (aspectRatio < 1) {
+                    // 纵向图片：高度为最大，宽度按比例缩小
+                    photoHeight = maxSize;
+                    photoWidth = maxSize * aspectRatio;
+                }
+            }
+
+            // 相框尺寸 = 照片尺寸 + 边框
+            const frameWidth = photoWidth + borderWidth * 2;
+            const frameHeight = photoHeight + borderWidth * 2;
+
+            const frameGeo = new THREE.BoxGeometry(frameWidth, frameHeight, 0.05);
+            const frameMat = new THREE.MeshStandardMaterial({ color: CONFIG.colors.champagneGold, metalness: 1.0, roughness: 0.1, envMapIntensity: 2.0, emissive: 0x886622, emissiveIntensity: 0.5 });
+            const frame = new THREE.Mesh(frameGeo, frameMat);
+            const photoGeo = new THREE.PlaneGeometry(photoWidth, photoHeight);
+            // 降低图片亮度：color 与纹理相乘，0xaaaaaa 约为 67% 亮度
+            const photoMat = new THREE.MeshBasicMaterial({
+                map: texture,
+                toneMapped: false,
+                color: 0xdedede,  // 调整亮度（87%）
+                transparent: true,
+                side: THREE.DoubleSide
+            });
+            const photo = new THREE.Mesh(photoGeo, photoMat);
+            photo.position.z = 0.04;
+            const group = new THREE.Group();
+            group.add(frame);
+            group.add(photo);
+            const s = 0.8;
+            group.scale.set(s, s, s);
+            photoMeshGroup.add(group);
+            particleSystem.push(new PhotoParticle(group));
+        }
+
+        // 更新 InstancedMesh 粒子（分帧更新）
+        function updateInstancedParticles(dt) {
+            const mode = STATE.mode;
+            const needsUpdate = {};
+            const len = particleData.length;
+
+            // 每帧只更新一部分粒子
+            const endIndex = Math.min(particleUpdateIndex + PARTICLES_PER_FRAME, len);
+
+            for (let i = particleUpdateIndex; i < endIndex; i++) {
+                const p = particleData[i];
+                const target = (mode === 'SCATTER' || mode === 'FOCUS') ? p.posScatter : p.posTree;
+
+                // 位置插值
+                p.position.lerp(target, 2.0 * dt);
+
+                // 旋转更新
+                if (mode === 'SCATTER') {
+                    p.rotation.x += p.spinSpeed.x * dt;
+                    p.rotation.y += p.spinSpeed.y * dt;
+                    p.rotation.z += p.spinSpeed.z * dt;
+                } else if (mode === 'TREE') {
+                    p.rotation.x *= 0.99;
+                    p.rotation.z *= 0.99;
+                    p.rotation.y += 0.5 * dt;
+                }
+
+                // 缩放
+                const targetScale = mode === 'FOCUS' ? p.baseScale * 0.8 : p.baseScale;
+                p.scale += (targetScale - p.scale) * 4 * dt;
+
+                // 更新矩阵
+                dummy.position.copy(p.position);
+                dummy.rotation.set(p.rotation.x, p.rotation.y, p.rotation.z);
+                dummy.scale.setScalar(p.scale);
+                dummy.updateMatrix();
+                instancedMeshes[p.type].setMatrixAt(p.instanceIndex, dummy.matrix);
+                needsUpdate[p.type] = true;
+            }
+
+            // 更新索引，循环
+            particleUpdateIndex = endIndex >= len ? 0 : endIndex;
+
+            // 标记需要更新的 InstancedMesh
+            for (const type in needsUpdate) {
+                instancedMeshes[type].instanceMatrix.needsUpdate = true;
+            }
+        }
+
+        // 更新灰尘粒子（使用 InstancedMesh）
+        function updateDustParticles(dt) {
+            if (!dustInstancedMesh || dustData.length === 0) return;
+
+            const mode = STATE.mode;
+            const elapsed = clock.elapsedTime;
+            const len = dustData.length;
+            const isVisible = mode !== 'TREE';
+
+            // 每帧更新所有灰尘
+            const endIndex = Math.min(dustUpdateIndex + DUST_PER_FRAME, len);
+
+            for (let i = dustUpdateIndex; i < endIndex; i++) {
+                const d = dustData[i];
+                const target = isVisible ? d.posScatter : d.posTree;
+
+                // 位置插值
+                d.position.lerp(target, 2.0 * dt);
+
+                // 旋转更新（散开时旋转）
+                if (isVisible) {
+                    d.rotation.x += d.spinSpeed.x * dt;
+                    d.rotation.y += d.spinSpeed.y * dt;
+                    d.rotation.z += d.spinSpeed.z * dt;
+                }
+
+                // 呼吸效果的缩放
+                const targetScale = isVisible ? d.baseScale * (0.8 + 0.4 * Math.sin(elapsed * 4 + d.id)) : 0;
+                d.scale += (targetScale - d.scale) * 4 * dt;
+
+                // 更新矩阵
+                dummy.position.copy(d.position);
+                dummy.rotation.set(d.rotation.x, d.rotation.y, d.rotation.z);
+                dummy.scale.setScalar(d.scale);
+                dummy.updateMatrix();
+                dustInstancedMesh.setMatrixAt(i, dummy.matrix);
+            }
+
+            // 更新索引，循环
+            dustUpdateIndex = endIndex >= len ? 0 : endIndex;
+
+            dustInstancedMesh.instanceMatrix.needsUpdate = true;
+        }
+
+        function setupEvents() {
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight; camera.updateProjectionMatrix(); adjustCameraPosition();
+                const pixelRatio = Math.min(window.devicePixelRatio, 2);
+                renderer.setPixelRatio(pixelRatio);
+                renderer.setSize(window.innerWidth, window.innerHeight);
+                composer.setPixelRatio(pixelRatio);
+                composer.setSize(window.innerWidth, window.innerHeight);
+            });
+        }
+
+        let lastVideoTime = -1;
+        let lastDetectionTime = 0;
+        let noHandFrameCount = 0;  // 连续未检测到手的帧数
+        const DETECTION_INTERVAL = 50;  // 检测间隔(ms)，防止过于频繁
+        const MAX_NO_HAND_FRAMES = 60;  // 最大连续无手帧数，超过后重置状态
+
+        async function predictWebcam() {
+            const now = performance.now();
+
+            // 节流：控制检测频率，防止过于频繁导致卡住
+            if (now - lastDetectionTime < DETECTION_INTERVAL) {
+                requestAnimationFrame(predictWebcam);
+                return;
+            }
+
+            // 检查视频是否有新帧或者需要强制检测
+            // 即使 currentTime 相同，也周期性进行检测防止卡住
+            const videoTimeChanged = video.currentTime !== lastVideoTime;
+            const forceDetection = (now - lastDetectionTime) > 200;  // 超过200ms强制检测
+
+            if ((videoTimeChanged || forceDetection) && video.readyState >= video.HAVE_CURRENT_DATA) {
+                lastVideoTime = video.currentTime;
+                lastDetectionTime = now;
+
+                if (handLandmarker) {
+                    try {
+                        const result = handLandmarker.detectForVideo(video, now);
+                        processGestures(result);
+
+                        // 跟踪连续未检测到手的帧数
+                        if (!result.landmarks || result.landmarks.length === 0) {
+                            noHandFrameCount++;
+                            // 如果连续太多帧没检测到手，重置检测状态
+                            if (noHandFrameCount > MAX_NO_HAND_FRAMES) {
+                                noHandFrameCount = 0;
+                                lastVideoTime = -1;  // 重置以确保下次能检测
+                            }
+                        } else {
+                            noHandFrameCount = 0;  // 检测到手，重置计数
+                        }
+                    } catch (e) {
+                        // 捕获检测错误，防止整个循环崩溃
+                        console.warn('手势检测出错:', e);
+                        noHandFrameCount++;
+                    }
+                }
+            }
+
+            requestAnimationFrame(predictWebcam);
+        }
+
+        function processGestures(result) {
+            if (video && video.readyState >= video.HAVE_ENOUGH_DATA && webcamCtx) {
+                try {
+                    webcamCtx.drawImage(video, 0, 0, 160, 120);
+                } catch (e) {
+                    console.warn('绘制视频帧失败:', e);
+                }
+            }
+
+            if (result.landmarks && result.landmarks.length > 0) {
+                STATE.hand.detected = true;
+                const lm = result.landmarks[0];
+
+                if (webcamCtx) {
+                    webcamCtx.fillStyle = "#0f0";
+                    for (let p of lm) {
+                        webcamCtx.beginPath();
+                        webcamCtx.arc(p.x * 160, p.y * 120, 2, 0, 2 * Math.PI);
+                        webcamCtx.fill();
+                    }
+                }
+
+                const handX = (lm[9].x - 0.5) * -2;
+                const handY = (lm[9].y - 0.5) * 2;
+
+                STATE.hand.x = handX;
+                STATE.hand.y = handY;
+
+                const thumbTip = lm[4];
+                const indexTip = lm[8];
+                const pinchDist = Math.hypot(thumbTip.x - indexTip.x, thumbTip.y - indexTip.y);
+
+                let detectedMode = STATE.mode;
+
+                if (pinchDist < 0.05) {
+                    detectedMode = 'FOCUS';
+                    if (STATE.mode !== 'FOCUS') {
+                        STATE.mode = 'FOCUS';
+                        const photos = particleSystem.filter(p => p.type === 'PHOTO');
+                        if (photos.length) STATE.focusTarget = photos[Math.floor(Math.random() * photos.length)].mesh;
+                    }
+                    updateGestureStatus("状态: 选中 (捏合)", "#FFD700");
+                    return;
+                }
+
+                const wrist = lm[0];
+                let extendedFingers = 0;
+                const fingerIndices = [8, 12, 16, 20];
+                const pipIndices = [6, 10, 14, 18];
+
+                for (let i = 0; i < 4; i++) {
+                    const tip = lm[fingerIndices[i]];
+                    const pip = lm[pipIndices[i]];
+                    const distTip = Math.hypot(tip.x - wrist.x, tip.y - wrist.y);
+                    const distPip = Math.hypot(pip.x - wrist.x, pip.y - wrist.y);
+                    if (distTip > distPip * 1.1) extendedFingers++;
+                }
+
+                if (extendedFingers >= 4) {
+                    detectedMode = 'SCATTER';
+                    STATE.mode = 'SCATTER';
+                    STATE.focusTarget = null;
+                    updateGestureStatus("状态: 旋转 (张手)", "#00FF00");
+                } else if (extendedFingers <= 1) {
+                    detectedMode = 'TREE';
+                    STATE.mode = 'TREE';
+                    STATE.focusTarget = null;
+                    updateGestureStatus("状态: 还原 (拳头)", "#00FFFF");
+                } else {
+                    updateGestureStatus("状态: 保持...", "#fff");
+                }
+
+            } else {
+                STATE.hand.detected = false;
+                updateGestureStatus("未检测到手", "#F00");
+            }
+        }
+
+        // 状态显示缓存，避免频繁更新DOM
+        let lastStatusText = '';
+        let lastStatusColor = '';
+
+        // 更新状态显示（带缓存，只在变化时更新）
+        function updateGestureStatus(text, color) {
+            if (text !== lastStatusText || color !== lastStatusColor) {
+                const statusDiv = document.getElementById('gesture-status');
+                if (statusDiv) {
+                    statusDiv.innerText = text;
+                    statusDiv.style.color = color;
+                }
+                lastStatusText = text;
+                lastStatusColor = color;
+            }
+        }
+
+        function animate() {
+            requestAnimationFrame(animate); controls.update(); const dt = clock.getDelta();
+
+            // 手势旋转控制 - 支持相对移动旋转，手离开后保持位置，带平滑和死区
+            if (STATE.mode === 'SCATTER' && STATE.hand.detected) {
+                // 对手部位置进行平滑处理（低通滤波）
+                STATE.hand.smoothX += (STATE.hand.x - STATE.hand.smoothX) * GESTURE_CONFIG.smoothFactor;
+                STATE.hand.smoothY += (STATE.hand.y - STATE.hand.smoothY) * GESTURE_CONFIG.smoothFactor;
+
+                if (!STATE.hand.isGrabbing) {
+                    // 刚开始检测到手，重置平滑位置并记录起始位置
+                    STATE.hand.isGrabbing = true;
+                    STATE.hand.smoothX = STATE.hand.x;  // 重置平滑位置为当前位置
+                    STATE.hand.smoothY = STATE.hand.y;
+                    STATE.hand.lastX = STATE.hand.x;
+                    STATE.hand.lastY = STATE.hand.y;
+                } else {
+                    // 计算平滑后手的移动增量
+                    const deltaX = STATE.hand.smoothX - STATE.hand.lastX;
+                    const deltaY = STATE.hand.smoothY - STATE.hand.lastY;
+
+                    // 死区过滤 - 忽略微小晃动
+                    if (Math.abs(deltaX) > GESTURE_CONFIG.deadZone || Math.abs(deltaY) > GESTURE_CONFIG.deadZone) {
+                        // 根据增量计算目标旋转角度
+                        STATE.rotation.targetY += deltaX * GESTURE_CONFIG.sensitivity * Math.PI;
+                        STATE.rotation.targetX += deltaY * GESTURE_CONFIG.sensitivity * Math.PI * 0.3;
+
+                        // 限制上下旋转角度
+                        STATE.rotation.targetX = Math.max(-0.5, Math.min(0.5, STATE.rotation.targetX));
+
+                        // 更新上一次位置
+                        STATE.hand.lastX = STATE.hand.smoothX;
+                        STATE.hand.lastY = STATE.hand.smoothY;
+                    }
+                }
+
+                // 平滑插值到目标旋转角度
+                STATE.rotation.y += (STATE.rotation.targetY - STATE.rotation.y) * GESTURE_CONFIG.rotationSmooth;
+                STATE.rotation.x += (STATE.rotation.targetX - STATE.rotation.x) * GESTURE_CONFIG.rotationSmooth;
+
+                mainGroup.rotation.y = STATE.rotation.y;
+                mainGroup.rotation.x = STATE.rotation.x;
+            } else if (STATE.mode === 'SCATTER' && !STATE.hand.detected) {
+                // 手离开后，继续平滑到目标位置
+                STATE.hand.isGrabbing = false;
+                STATE.rotation.y += (STATE.rotation.targetY - STATE.rotation.y) * GESTURE_CONFIG.rotationSmooth;
+                STATE.rotation.x += (STATE.rotation.targetX - STATE.rotation.x) * GESTURE_CONFIG.rotationSmooth;
+                mainGroup.rotation.y = STATE.rotation.y;
+                mainGroup.rotation.x = STATE.rotation.x;
+            } else {
+                // TREE模式或其他模式
+                if (STATE.mode === 'TREE') {
+                    STATE.hand.isGrabbing = false;
+                    STATE.rotation.targetY += 0.3 * dt;
+                    STATE.rotation.targetX += (0 - STATE.rotation.targetX) * 2.0 * dt;
+                    STATE.rotation.y = STATE.rotation.targetY;
+                    STATE.rotation.x = STATE.rotation.targetX;
+                    mainGroup.rotation.y = STATE.rotation.y;
+                    mainGroup.rotation.x = STATE.rotation.x;
+                } else {
+                    // FOCUS模式等，缓慢旋转
+                    STATE.rotation.targetY += 0.1 * dt;
+                    STATE.rotation.y = STATE.rotation.targetY;
+                    mainGroup.rotation.y = STATE.rotation.y;
+                }
+            }
+            // 更新 InstancedMesh 粒子
+            updateInstancedParticles(dt);
+
+            // 更新灰尘粒子
+            updateDustParticles(dt);
+
+            // 更新照片粒子（保持原有方式）
+            particleSystem.forEach(p => p.update(dt, STATE.mode, STATE.focusTarget));
+
+            composer.render();
+        }
+
+        // 检查是否首次访问
+        const VISITED_KEY = 'xmas_visited';
+        const hasVisited = localStorage.getItem(VISITED_KEY);
+        const loader = document.getElementById('loader');
+
+        async function startApp() {
+            // 标记已进入页面
+            hasEnteredPage = true;
+
+            // 如果模型还在加载中，显示加载提示并启动倒计时
+            const loadingTip = document.getElementById('gesture-loading-tip');
+            if (loadingTip && !isModelPreloaded && !handLandmarker) {
+                loadingTip.style.display = 'block';
+                startGestureCountdown();
+            }
+
+            loader.classList.add('loading');
+
+            await init();
+            attemptPlay();
+
+            // 记录已访问
+            localStorage.setItem(VISITED_KEY, 'true');
+        }
+
+        if (hasVisited) {
+            // 非首次访问，直接启动（不显示 loader）
+            loader.classList.add('loading');
+            loader.style.display = 'flex';
+            init().then(() => attemptPlay());
+        } else {
+            // 首次访问，显示进入页面，同时后台预加载手势模型
+            loader.style.display = 'flex';
+            document.getElementById('enter-btn').addEventListener('click', startApp);
+            // 立即开始预加载手势模型
+            preloadGestureModel();
+        }
+    </script>
+</body>
+
+</html>
