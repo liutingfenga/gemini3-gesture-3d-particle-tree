@@ -10,7 +10,7 @@ PC端页面：
 ---
 
 移动端页面：
-![20251216231508_160_131](https://img.lenyiin.com/app/hide.php?key=WHZ6U0Jvcm5Wd2IrbjNXazNZNVptclFvY0ZZOFVZK1VGcWl0bGw0PQ==)
+![20251216231508_160_131-portrait 375x980](https://img.lenyiin.com/app/hide.php?key=TmZEdEtCdTAvVVVDeXlVRHVXVTkxN1FvY0ZZOFVZK1VGcWl0bGw0PQ==)
 
 ---
 
