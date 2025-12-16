@@ -4,8 +4,13 @@
 通过摄像头识别你的手势，在浏览器中实时控制粒子圣诞树的旋转、还原和聚焦特效，带来沉浸式的节日互动体验。
 
 ---
-
+PC端页面：
 ![ScreenShot_2025-12-16_221549_917](https://img.lenyiin.com/app/hide.php?key=eDJUNW9EeXpWWnNzd2VMdjRCenZFclFvY0ZZOFVZK1VGcWl0bGw0PQ==)
+
+---
+
+移动端页面：
+![20251216231508_160_131](https://img.lenyiin.com/app/hide.php?key=YzZvSktyNXdvYzRRQVZ3V291cDY5clFvY0ZZOFVZK1VGcWl0bGw0PQ==)
 
 ---
 
