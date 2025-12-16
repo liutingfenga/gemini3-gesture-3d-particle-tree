@@ -14,6 +14,15 @@
 
 ---
 
+## ✨ 版本介绍
+
+- V1版本为*最基础*版本，不包含手机+PC协同模式、图片圣诞树分享功能
+- V2版本为*功能进阶*版本，包含含手机+PC协同模式、图片圣诞树分享功能
+
+- V2版本需要公网服务器以及HTTPS，现在开源计划进行中，敬请期待！
+
+---
+
 ## 🎮 交互玩法（手势说明）
 
 请确保摄像头权限已开启，在摄像头前进行以下手势操作：
@@ -146,10 +155,30 @@
 
 ## 🚀 快速开始
 
-### 1. 克隆项目
+### 1.本地使用
+```bash
+Live Server 插件：
+![ScreenShot_2025-12-16_202857_536](https://img.lenyiin.com/app/hide.php?key=dkZRNmMxeksxSDJhaVFYQm5PZEVYYlFvY0ZZOFVZK1VGcWl0bGw0PQ==)
+
+- 直接打开 index.html ，用 VS Code 的 Live Server 启动。
+- 但是：它只提供静态文件服务，不会跑项目里的 WebSocket 信令、分享 API 等 Node 后端逻辑。
+```
+```bash
+1.安装依赖（只需一次）：
+npm install
+
+2.正常启动服务器
+npm start
+- 默认监听端口 8000 ，控制台会打印：
+ 本地访问： http://localhost:8000 或 https://localhost:8000
+- 如果配置了证书，会自动用 HTTPS，摄像头功能才可用。
+```
+
+
+### 2. 克隆项目
 
 ```bash
-git clone <your-repo-url>.git
+git clone [<your-repo-url>](https://github.com/liutingfenga/gemini3-gesture-3d-particle-tree.git).git
 cd christmas-tree-gesture
 ```
 
