@@ -156,10 +156,9 @@
 ## 🚀 快速开始
 
 ### 1.本地使用
+![ScreenShot_2025-12-16_202857_536](https://img.lenyiin.com/app/hide.php?key=dkZRNmMxeksxSDJhaVFYQm5PZEVYYlFvY0ZZOFVZK1VGcWl0bGw0PQ==)
 ```bash
 Live Server 插件：
-![ScreenShot_2025-12-16_202857_536](https://img.lenyiin.com/app/hide.php?key=dkZRNmMxeksxSDJhaVFYQm5PZEVYYlFvY0ZZOFVZK1VGcWl0bGw0PQ==)
-
 - 直接打开 index.html ，用 VS Code 的 Live Server 启动。
 - 但是：它只提供静态文件服务，不会跑项目里的 WebSocket 信令、分享 API 等 Node 后端逻辑。
 ```
