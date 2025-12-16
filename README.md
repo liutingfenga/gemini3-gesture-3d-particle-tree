@@ -162,8 +162,8 @@
 ### 1. 克隆项目
 
 ```bash
-git clone [<your-repo-url>](https://github.com/liutingfenga/gemini3-gesture-3d-particle-tree.git).git
-cd christmas-tree-gesture
+git clone https://github.com/liutingfenga/gemini3-gesture-3d-particle-tree.git
+cd gemini3-gesture-3d-particle-tree
 ```
 
 ### 1.V1版本-本地使用
