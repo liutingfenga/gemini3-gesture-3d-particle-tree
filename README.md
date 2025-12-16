@@ -155,15 +155,24 @@
 
 ## 🚀 快速开始
 
-### 1.本地使用
+### 1. 克隆项目
+
+```bash
+git clone [<your-repo-url>](https://github.com/liutingfenga/gemini3-gesture-3d-particle-tree.git).git
+cd christmas-tree-gesture
+```
+
+### 1.V1版本-本地使用
 ![ScreenShot_2025-12-16_202857_536](https://img.lenyiin.com/app/hide.php?key=dkZRNmMxeksxSDJhaVFYQm5PZEVYYlFvY0ZZOFVZK1VGcWl0bGw0PQ==)
 ```bash
 Live Server 插件：
 - 直接打开 index.html ，用 VS Code 的 Live Server 启动。
 - 但是：它只提供静态文件服务，不会跑项目里的 WebSocket 信令、分享 API 等 Node 后端逻辑。
 ```
+
+### 1.V2版本-分享和链接手机摄像头功能无法本地使用，需要公网服务器并结合Node服务
 ```bash
-1.安装依赖（只需一次）：
+1.安装依赖：
 npm install
 
 2.正常启动服务器
@@ -172,36 +181,6 @@ npm start
  本地访问： http://localhost:8000 或 https://localhost:8000
 - 如果配置了证书，会自动用 HTTPS，摄像头功能才可用。
 ```
-
-
-### 2. 克隆项目
-
-```bash
-git clone [<your-repo-url>](https://github.com/liutingfenga/gemini3-gesture-3d-particle-tree.git).git
-cd christmas-tree-gesture
-```
-
-### 2. 安装依赖
-
-```bash
-npm install
-```
-
-### 3. 启动本地服务
-
-开发模式（自动重启）：
-
-```bash
-npm run dev
-```
-
-或普通启动：
-
-```bash
-npm start
-```
-
-默认情况下服务器会在类似 `http://localhost:3000` 端口运行（具体端口以 `server.js` 中配置为准）。
 
 ---
 
