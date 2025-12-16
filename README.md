@@ -5,6 +5,10 @@
 
 ---
 
+![ScreenShot_2025-12-16_221549_917](https://img.lenyiin.com/app/hide.php?key=eDJUNW9EeXpWWnNzd2VMdjRCenZFclFvY0ZZOFVZK1VGcWl0bGw0PQ==)
+
+---
+
 ## ✨ 项目简介
 
 - 这是一个基于 **手势控制** 的 **3D 粒子 + 照片云** 互动圣诞树项目  
