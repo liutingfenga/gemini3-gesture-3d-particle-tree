@@ -4,6 +4,15 @@
 通过摄像头识别你的手势，在浏览器中实时控制粒子圣诞树的旋转、还原和聚焦特效，带来沉浸式的节日互动体验。
 
 ---
+PC端页面：
+![ScreenShot_2025-12-16_221549_917](https://img.lenyiin.com/app/hide.php?key=eDJUNW9EeXpWWnNzd2VMdjRCenZFclFvY0ZZOFVZK1VGcWl0bGw0PQ==)
+
+---
+
+移动端页面：
+![20251216231508_160_131-portrait 375x980](https://img.lenyiin.com/app/hide.php?key=TmZEdEtCdTAvVVVDeXlVRHVXVTkxN1FvY0ZZOFVZK1VGcWl0bGw0PQ==)
+
+---
 
 ## ✨ 项目简介
 
@@ -158,8 +167,8 @@
 ### 1. 克隆项目
 
 ```bash
-git clone [<your-repo-url>](https://github.com/liutingfenga/gemini3-gesture-3d-particle-tree.git).git
-cd christmas-tree-gesture
+git clone https://github.com/liutingfenga/gemini3-gesture-3d-particle-tree.git
+cd gemini3-gesture-3d-particle-tree
 ```
 
 ### 1.V1版本-本地使用
@@ -236,7 +245,6 @@ npm start
 本仓库在此基础上，增加/调整了包括但不限于：
 
 - 音乐管理
-- 图片上传
 - 图片上传
 - 分享功能
 - 标题设置
