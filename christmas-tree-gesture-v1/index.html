@@ -42,6 +42,50 @@
 
     <audio id="bg-music" loop style="display:none;"></audio>
 
+    <!-- 告白信弹窗 -->
+    <div id="confession-overlay" class="confession-overlay" style="display:none;">
+        <div class="envelope-wrapper">
+            <div class="envelope" id="envelope">
+                <div class="envelope-back"></div>
+                <div class="letter">
+                    <button id="confession-close" class="confession-close">✕</button>
+                    <div class="letter-inner">
+                        <div class="confession-content" id="confession-text"></div>
+                    </div>
+                    <div class="letter-decoration deco-tl">❄️</div>
+                    <div class="letter-decoration deco-tr">🎄</div>
+                    <div class="letter-decoration deco-bl">🦌</div>
+                    <div class="letter-decoration deco-br">🎁</div>
+                </div>
+                <div class="envelope-front"></div>
+                <div class="envelope-flap"></div>
+                <div class="envelope-seal" id="envelope-seal">
+                    <span class="seal-content">✨</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 告白信管理面板 -->
+    <div id="confession-manager" class="confession-manager panel-draggable">
+        <div class="confession-manager-header panel-header">
+            <span class="confession-manager-title">💌 告白信管理</span>
+            <div class="panel-actions">
+                <button class="panel-action-btn panel-maximize-btn" title="放大/缩小">⛶</button>
+                <button id="confession-manager-close" class="confession-manager-close">✕</button>
+            </div>
+        </div>
+        <div class="confession-input-group">
+            <label class="confession-input-label">信件内容</label>
+            <textarea id="confession-input" class="confession-textarea" placeholder="在这里输入你想说的话..."></textarea>
+        </div>
+        <div class="confession-buttons">
+            <button id="preview-confession-btn" class="apply-btn" style="flex: 1; background: #ff4081;">💌 预览效果</button>
+            <button id="save-confession-btn" class="apply-btn" style="flex: 1;">✅ 保存内容</button>
+        </div>
+        <div class="panel-resize-handle"></div>
+    </div>
+
     <div id="ui-layer">
         <div id="ui-content">
             <h1>Merry Christmas</h1>
@@ -74,6 +118,13 @@
                             <span>选中并放大照片</span>
                         </div>
                     </div>
+                    <div class="instruction-item">
+                        <span class="instruction-icon">❤️</span>
+                        <div class="instruction-text">
+                            <strong>双手比心</strong>
+                            <span>触发浪漫告白信模式</span>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -86,6 +137,7 @@
                     <button id="camera-btn" class="btn-style">🖐️ 开启手势</button>
                     <button id="music-manage-btn" class="btn-style">🎵 音乐管理</button>
                     <button id="photo-manage-btn" class="btn-style">📷 图片管理</button>
+                    <button id="confession-manage-btn" class="btn-style">💌 告白信管理</button>
 
                     <button id="preview-toggle-btn" class="btn-style">🖼️ 隐藏摄像头框</button>
                     <button id="toggle-ui-btn" class="btn-style">👁️ 隐藏所有UI元素(只有圣诞树)</button>
@@ -329,6 +381,12 @@
         let particleData = [];     // 存储所有粒子的数据（位置、旋转、缩放等）
         let dustInstancedMesh = null;  // 灰尘粒子 InstancedMesh
         let dustData = [];         // 灰尘粒子数据
+        
+        // 雪花系统
+        let snowInstancedMesh = null;
+        let snowData = [];
+        let isSnowing = true; // 默认下雪
+
         const dummy = new THREE.Object3D();  // 用于计算矩阵
 
         // 分帧更新优化（每帧更新全部，但优化计算）
@@ -578,7 +636,7 @@
         // --- Init ---
         async function init() {
             try { await initDB(); } catch (e) { }
-            initThree(); setupEnvironment(); setupLights(); createTextures(); createParticles(); createDust(); createDefaultPhotos(); setupPostProcessing(); setupEvents(); setupUI();
+            initThree(); setupEnvironment(); setupLights(); createTextures(); createParticles(); createDust(); createSnow(); createDefaultPhotos(); setupPostProcessing(); setupEvents(); setupUI();
 
             loadDataFromDB();
 
@@ -742,7 +800,7 @@
                 const vision = await FilesetResolver.forVisionTasks("/js/mediapipe/wasm");
                 handLandmarker = await HandLandmarker.createFromOptions(vision, {
                     baseOptions: { modelAssetPath: "/assets/hand_landmarker.task", delegate: "GPU" },
-                    runningMode: "VIDEO", numHands: 1
+                    runningMode: "VIDEO", numHands: 2
                 });
                 isModelPreloaded = true;
                 console.log('[预加载] 手势模型加载完成');
@@ -780,7 +838,7 @@
                     const vision = await FilesetResolver.forVisionTasks("/js/mediapipe/wasm");
                     handLandmarker = await HandLandmarker.createFromOptions(vision, {
                         baseOptions: { modelAssetPath: "/assets/hand_landmarker.task", delegate: "GPU" },
-                        runningMode: "VIDEO", numHands: 1
+                        runningMode: "VIDEO", numHands: 2
                     });
 
                     console.log('[PC端] 手势模型加载完成');
@@ -857,7 +915,7 @@
                     const vision = await FilesetResolver.forVisionTasks("/js/mediapipe/wasm");
                     handLandmarker = await HandLandmarker.createFromOptions(vision, {
                         baseOptions: { modelAssetPath: "/assets/hand_landmarker.task", delegate: "GPU" },
-                        runningMode: "VIDEO", numHands: 1
+                        runningMode: "VIDEO", numHands: 2
                     });
                 }
 
@@ -968,6 +1026,115 @@
             const t = document.getElementById('toast');
             t.textContent = msg; t.style.display = 'block';
             setTimeout(() => { t.style.display = 'none'; }, 3000);
+        }
+
+        // --- Confession Logic ---
+        let typewriterInterval;
+        const DEFAULT_CONFESSION_TEXT = "在这个特别的圣诞节，\n想对你说：\n\nMerry Christmas!\n愿你的生活充满阳光和温暖。\n\n❤️";
+
+        // 告白信定时器管理
+        let confessionTimer1 = null;
+        let confessionTimer2 = null;
+        let overlayHideTimer = null;
+
+        function showConfession() {
+            if (STATE.mode === 'HEART') return;
+            
+            STATE.mode = 'HEART';
+            isSnowing = true;
+            if (snowInstancedMesh) snowInstancedMesh.visible = true;
+            
+            // 更新UI开关状态
+            const snowToggle = document.getElementById('snow-toggle');
+            if (snowToggle) snowToggle.checked = true;
+
+            const overlay = document.getElementById('confession-overlay');
+            const envelope = document.getElementById('envelope');
+            const textContainer = document.getElementById('confession-text');
+            
+            if (overlay && textContainer) {
+                // 清除之前的定时器，防止冲突
+                if (confessionTimer1) clearTimeout(confessionTimer1);
+                if (confessionTimer2) clearTimeout(confessionTimer2);
+                if (overlayHideTimer) clearTimeout(overlayHideTimer);
+
+                // 确保打字机停止
+                if (typewriterInterval) clearInterval(typewriterInterval);
+                textContainer.textContent = ''; // 清空内容
+
+                overlay.style.display = 'flex';
+                // 强制重绘
+                overlay.offsetHeight;
+                overlay.classList.add('show');
+                
+                // 重置信封状态
+                if (envelope) {
+                    // 先移除 open 类，并强制重绘，确保从关闭状态开始
+                    envelope.classList.remove('open');
+                    envelope.offsetHeight; // 强制重绘
+                    
+                    // 自动打开动画
+                    confessionTimer1 = setTimeout(() => {
+                        envelope.classList.add('open');
+                        
+                        // 获取告白内容
+                        const savedText = localStorage.getItem('confession_text') || DEFAULT_CONFESSION_TEXT;
+                        // 延迟打字，等信纸展开
+                        confessionTimer2 = setTimeout(() => {
+                            startTypewriter(savedText, textContainer);
+                        }, 1000);
+                    }, 500);
+                }
+            }
+        }
+
+        function hideConfession() {
+            STATE.mode = 'TREE'; // 恢复为树形
+            isSnowing = false; // 停止下雪
+            if (snowInstancedMesh) snowInstancedMesh.visible = false;
+             
+            // 更新UI开关状态
+            const snowToggle = document.getElementById('snow-toggle');
+            if (snowToggle) snowToggle.checked = false;
+
+            // 清除所有定时器
+            if (confessionTimer1) clearTimeout(confessionTimer1);
+            if (confessionTimer2) clearTimeout(confessionTimer2);
+            if (overlayHideTimer) clearTimeout(overlayHideTimer);
+            if (typewriterInterval) clearInterval(typewriterInterval);
+
+            const overlay = document.getElementById('confession-overlay');
+            const envelope = document.getElementById('envelope');
+
+            if (overlay) {
+                overlay.classList.remove('show');
+                
+                // 立即关闭信封，避免动画干扰
+                if (envelope) {
+                    envelope.classList.remove('open');
+                }
+
+                overlayHideTimer = setTimeout(() => {
+                    overlay.style.display = 'none';
+                }, 500);
+            }
+        }
+
+        function startTypewriter(text, container) {
+            if (typewriterInterval) clearInterval(typewriterInterval);
+            container.textContent = '';
+            
+            let i = 0;
+            typewriterInterval = setInterval(() => {
+                if (i < text.length) {
+                    container.textContent += text.charAt(i);
+                    i++;
+                    // 自动滚动到底部
+                    container.scrollTop = container.scrollHeight;
+                } else {
+                    clearInterval(typewriterInterval);
+                }
+            }, 100); // 打字速度
         }
 
         function setupUI() {
@@ -1709,6 +1876,81 @@
                     clearBackgroundData();
                 }
             });
+
+            // 告白信相关事件
+            const confessionCloseBtn = document.getElementById('confession-close');
+            if (confessionCloseBtn) {
+                confessionCloseBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    hideConfession();
+                });
+            }
+            
+            const snowToggle = document.getElementById('snow-toggle');
+            if (snowToggle) {
+                snowToggle.addEventListener('change', (e) => {
+                    isSnowing = e.target.checked;
+                    if (snowInstancedMesh) snowInstancedMesh.visible = isSnowing;
+                    if (isSnowing) showToast('❄️ 开始下雪');
+                    else showToast('❄️ 雪停了');
+                });
+            }
+
+            // 告白信管理面板
+            const confessionManageBtn = document.getElementById('confession-manage-btn');
+            const confessionManager = document.getElementById('confession-manager');
+            const confessionManagerClose = document.getElementById('confession-manager-close');
+            const confessionInput = document.getElementById('confession-input');
+            const saveConfessionBtn = document.getElementById('save-confession-btn');
+            const previewConfessionBtn = document.getElementById('preview-confession-btn');
+
+            if (confessionManageBtn) {
+                confessionManageBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    // 加载已保存的内容
+                    const savedText = localStorage.getItem('confession_text') || DEFAULT_CONFESSION_TEXT;
+                    if (confessionInput) confessionInput.value = savedText;
+                    togglePanel('confession-manager');
+                });
+            }
+
+            if (confessionManagerClose) {
+                confessionManagerClose.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    confessionManager.classList.remove('show');
+                });
+            }
+
+            if (saveConfessionBtn) {
+                saveConfessionBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const text = confessionInput.value;
+                    if (!text.trim()) {
+                        showToast('⚠️ 内容不能为空');
+                        return;
+                    }
+                    localStorage.setItem('confession_text', text);
+                    showToast('✅ 告白信内容已保存');
+                    confessionManager.classList.remove('show');
+                });
+            }
+
+            if (previewConfessionBtn) {
+                previewConfessionBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const text = confessionInput.value;
+                    if (!text.trim()) {
+                        showToast('⚠️ 内容不能为空');
+                        return;
+                    }
+                    localStorage.setItem('confession_text', text); // 预览时自动保存
+                    confessionManager.classList.remove('show');
+                    showConfession();
+                });
+            }
+
+            // 将新面板加入统一管理
+            allPanels['confession-manager'] = confessionManager;
         }
 
         // --- Three.js Logic ---
@@ -2006,6 +2248,60 @@
             mainGroup.add(dustInstancedMesh);
         }
 
+        function createSnow() {
+            const snowCount = 1000; // 雪花数量
+            const snowGeo = new THREE.TetrahedronGeometry(0.1, 0); // 使用四面体模拟雪花
+            const snowMat = new THREE.MeshBasicMaterial({
+                color: 0xffffff,
+                transparent: true,
+                opacity: 0.8
+            });
+
+            snowInstancedMesh = new THREE.InstancedMesh(snowGeo, snowMat, snowCount);
+            snowInstancedMesh.frustumCulled = false;
+
+            for (let i = 0; i < snowCount; i++) {
+                const x = (Math.random() - 0.5) * 60;
+                const y = (Math.random() - 0.5) * 60;
+                const z = (Math.random() - 0.5) * 60;
+                const position = new THREE.Vector3(x, y, z);
+                
+                const rotation = new THREE.Euler(
+                    Math.random() * Math.PI * 2,
+                    Math.random() * Math.PI * 2,
+                    Math.random() * Math.PI * 2
+                );
+
+                const scale = 0.5 + Math.random() * 0.5;
+
+                snowData.push({
+                    position: position,
+                    velocity: new THREE.Vector3(
+                        (Math.random() - 0.5) * 0.1, // X轴轻微飘动
+                        -0.05 - Math.random() * 0.1, // Y轴下落
+                        (Math.random() - 0.5) * 0.1  // Z轴轻微飘动
+                    ),
+                    rotation: rotation,
+                    rotSpeed: new THREE.Vector3(
+                        (Math.random() - 0.5) * 2,
+                        (Math.random() - 0.5) * 2,
+                        (Math.random() - 0.5) * 2
+                    ),
+                    scale: scale
+                });
+
+                dummy.position.copy(position);
+                dummy.rotation.copy(rotation);
+                dummy.scale.setScalar(scale);
+                dummy.updateMatrix();
+                snowInstancedMesh.setMatrixAt(i, dummy.matrix);
+            }
+
+            snowInstancedMesh.instanceMatrix.needsUpdate = true;
+            snowInstancedMesh.visible = isSnowing;
+            mainGroup.add(snowInstancedMesh);
+        }
+
         function createDefaultPhotos() {
             const canvas = document.createElement('canvas'); canvas.width = 512; canvas.height = 512; const ctx = canvas.getContext('2d');
             ctx.fillStyle = '#050505'; ctx.fillRect(0, 0, 512, 512); ctx.strokeStyle = '#eebb66'; ctx.lineWidth = 15; ctx.strokeRect(20, 20, 472, 472);
@@ -2083,10 +2379,19 @@
 
             for (let i = particleUpdateIndex; i < endIndex; i++) {
                 const p = particleData[i];
-                const target = (mode === 'SCATTER' || mode === 'FOCUS') ? p.posScatter : p.posTree;
+                let target;
+                
+                if (mode === 'SCATTER' || mode === 'FOCUS') {
+                    target = p.posScatter;
+                } else if (mode === 'HEART') {
+                    // 合拢效果：向中心聚集
+                    target = new THREE.Vector3(0, 0, 0);
+                } else {
+                    target = p.posTree;
+                }
 
                 // 位置插值
-                p.position.lerp(target, 2.0 * dt);
+                p.position.lerp(target, (mode === 'HEART' ? 1.0 : 2.0) * dt);
 
                 // 旋转更新
                 if (mode === 'SCATTER') {
@@ -2097,10 +2402,17 @@
                     p.rotation.x *= 0.99;
                     p.rotation.z *= 0.99;
                     p.rotation.y += 0.5 * dt;
+                } else if (mode === 'HEART') {
+                     p.rotation.x += p.spinSpeed.x * dt * 0.5;
+                     p.rotation.y += p.spinSpeed.y * dt * 0.5;
+                     p.rotation.z += p.spinSpeed.z * dt * 0.5;
                 }
 
                 // 缩放
-                const targetScale = mode === 'FOCUS' ? p.baseScale * 0.8 : p.baseScale;
+                let targetScale = p.baseScale;
+                if (mode === 'FOCUS') targetScale = p.baseScale * 0.8;
+                else if (mode === 'HEART') targetScale = p.baseScale * 0.5; // 变小
+                
                 p.scale += (targetScale - p.scale) * 4 * dt;
 
                 // 更新矩阵
@@ -2163,6 +2475,38 @@
             dustUpdateIndex = endIndex >= len ? 0 : endIndex;
 
             dustInstancedMesh.instanceMatrix.needsUpdate = true;
+        }
+
+        function updateSnowParticles(dt) {
+            if (!snowInstancedMesh || !isSnowing) return;
+
+            const len = snowData.length;
+            for (let i = 0; i < len; i++) {
+                const s = snowData[i];
+                
+                // 更新位置
+                s.position.add(s.velocity);
+                
+                // 边界检查：如果超出范围，重置到顶部
+                if (s.position.y < -30) {
+                    s.position.y = 30;
+                    s.position.x = (Math.random() - 0.5) * 60;
+                    s.position.z = (Math.random() - 0.5) * 60;
+                }
+
+                // 旋转
+                s.rotation.x += s.rotSpeed.x * dt;
+                s.rotation.y += s.rotSpeed.y * dt;
+                s.rotation.z += s.rotSpeed.z * dt;
+
+                // 更新矩阵
+                dummy.position.copy(s.position);
+                dummy.rotation.set(s.rotation.x, s.rotation.y, s.rotation.z);
+                dummy.scale.setScalar(s.scale);
+                dummy.updateMatrix();
+                snowInstancedMesh.setMatrixAt(i, dummy.matrix);
+            }
+            snowInstancedMesh.instanceMatrix.needsUpdate = true;
         }
 
         function setupEvents() {
@@ -2236,19 +2580,52 @@
                 }
             }
 
+            // 如果处于告白模式（HEART），暂停手势控制
+            if (STATE.mode === 'HEART') {
+                updateGestureStatus("❤️ 正在告白...", "#ff4081");
+                return;
+            }
+
             if (result.landmarks && result.landmarks.length > 0) {
                 STATE.hand.detected = true;
-                const lm = result.landmarks[0];
-
+                
+                // 绘制关键点
                 if (webcamCtx) {
                     webcamCtx.fillStyle = "#0f0";
-                    for (let p of lm) {
-                        webcamCtx.beginPath();
-                        webcamCtx.arc(p.x * 160, p.y * 120, 2, 0, 2 * Math.PI);
-                        webcamCtx.fill();
+                    for (const landmarks of result.landmarks) {
+                        for (let p of landmarks) {
+                            webcamCtx.beginPath();
+                            webcamCtx.arc(p.x * 160, p.y * 120, 2, 0, 2 * Math.PI);
+                            webcamCtx.fill();
+                        }
                     }
                 }
 
+                // 检测爱心手势 (需要两只手)
+                if (result.landmarks.length === 2) {
+                    const hand1 = result.landmarks[0];
+                    const hand2 = result.landmarks[1];
+
+                    // 获取拇指指尖(4)和食指指尖(8)
+                    const h1_4 = hand1[4];
+                    const h1_8 = hand1[8];
+                    const h2_4 = hand2[4];
+                    const h2_8 = hand2[8];
+
+                    // 计算两手拇指指尖距离和食指指尖距离
+                    const thumbDist = Math.hypot(h1_4.x - h2_4.x, h1_4.y - h2_4.y);
+                    const indexDist = Math.hypot(h1_8.x - h2_8.x, h1_8.y - h2_8.y);
+
+                    // 阈值判断 (根据实际测试调整)
+                    if (thumbDist < 0.2 && indexDist < 0.2) {
+                        // 触发告白模式
+                        showConfession();
+                        return;
+                    }
+                }
+
+                // 单手手势逻辑 (取第一只手)
+                const lm = result.landmarks[0];
                 const handX = (lm[9].x - 0.5) * -2;
                 const handY = (lm[9].y - 0.5) * 2;
 
@@ -2393,6 +2770,9 @@
 
             // 更新灰尘粒子
             updateDustParticles(dt);
+
+            // 更新雪花粒子
+            updateSnowParticles(dt);
 
             // 更新照片粒子（保持原有方式）
             particleSystem.forEach(p => p.update(dt, STATE.mode, STATE.focusTarget));
